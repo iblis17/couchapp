@@ -6,12 +6,6 @@
 import logging
 import os
 
-try:
-    import desktopcouch
-except ImportError:
-    desktopcouch = None
-
-
 from couchapp import clone_app
 from couchapp.autopush.command import autopush, DEFAULT_UPDATE_DELAY
 from couchapp.errors import ResourceNotFound, AppError, BulkSaveError
