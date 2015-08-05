@@ -33,7 +33,7 @@ def init(conf, path, *args, **opts):
     if dest is None:
         raise AppError("Unknown dest")
 
-    document(dest, True)
+    document(dest, create=True)
 
 
 def push(conf, path, *args, **opts):
@@ -216,7 +216,6 @@ def startapp(conf, *args, **opts):
         name = args[0]
         dest = os.path.normpath(os.path.join(os.getcwd(), ".", name))
     elif len(args) == 2:
-
         name = args[1]
         dest = os.path.normpath(os.path.join(args[0], args[1]))
 
