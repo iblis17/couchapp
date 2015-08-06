@@ -23,5 +23,40 @@ def test_init_dest_auto(mock_doc, mock_cwd):
 @raises(AppError)
 @patch('os.getcwd', return_value=None)
 @patch('couchapp.commands.document')
-def test_init_dest_auto(mock_doc, mock_cwd):
+def test_init_dest_none(mock_doc, mock_cwd):
     commands.init(None, None)
+
+
+def test_push_outside():
+    '''
+    $ couchapp push /path/to/app
+    '''
+    pass
+
+
+@patch('couchapp.commands.document', return_value='{"status": "ok"}')
+def test_push_export_outside(mock_doc):
+    '''
+    $ couchapp push --export /path/to/app
+    '''
+    conf = Mock(name='conf')
+    appdir = '/mock_dir'
+
+    commands.push(conf, None, appdir, export=True)
+    mock_doc.assert_called_once_with(appdir, create=False, docid=None)
+    conf.update.assert_called_once_with(appdir)
+
+
+@patch('couchapp.commands.document', return_value='{"status": "ok"}')
+def test_push_export_inside(mock_doc):
+    '''
+    In the app dir::
+
+    $ couchapp push --export
+    '''
+    conf = Mock(name='conf')
+    appdir = '/mock_dir'
+
+    commands.push(conf, appdir, export=True)
+    mock_doc.assert_called_once_with(appdir, create=False, docid=None)
+    conf.update.assert_called_once_with(appdir)
