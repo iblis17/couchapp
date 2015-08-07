@@ -129,3 +129,11 @@ def test_push_export_to_file(mock_doc, mock_util):
         '{"status": "ok"}'
     )
     assert ret_code == 0
+
+
+@raises(AppError)
+def test_push_app_path_error():
+    conf = NonCallableMock(name='conf')
+    dest = 'http://localhost'
+
+    commands.push(conf, None, dest)
