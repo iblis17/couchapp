@@ -47,11 +47,12 @@ def test_push_outside(mock_doc, mock_hook):
 
     conf.get_dbs.return_value = dest
 
-    commands.push(conf, path, appdir, dest)
+    ret_code = commands.push(conf, path, appdir, dest)
 
     mock_doc.assert_called_once_with(appdir, create=False, docid=None)
     mock_doc().push.assert_called_once_with(dest, False, False, False)
     assert mock_hook.call_args_list == hook_expect
+    assert ret_code == 0
 
 
 @patch('os.path.exists')
@@ -71,9 +72,10 @@ def test_push_with_pushdocs(mock_doc, mock_hook, mock_pushdocs, mock_exists):
         return docspath_ == docspath
     mock_exists.side_effect = check_docspath
 
-    commands.push(conf, appdir, dest)
+    ret_code = commands.push(conf, appdir, dest)
 
     mock_pushdocs.assert_called_once_with(conf, docspath, dest, dest)
+    assert ret_code == 0
 
 
 @patch('couchapp.commands.document', return_value='{"status": "ok"}',
@@ -85,8 +87,10 @@ def test_push_export_outside(mock_doc):
     conf = NonCallableMock(name='conf')
     appdir = '/mock_dir'
 
-    commands.push(conf, None, appdir, export=True)
+    ret_code = commands.push(conf, None, appdir, export=True)
+
     mock_doc.assert_called_once_with(appdir, create=False, docid=None)
+    assert ret_code == 0
 
 
 @patch('couchapp.commands.document', return_value='{"status": "ok"}',
@@ -100,8 +104,10 @@ def test_push_export_inside(mock_doc):
     conf = NonCallableMock(name='conf')
     appdir = '/mock_dir'
 
-    commands.push(conf, appdir, export=True)
+    ret_code = commands.push(conf, appdir, export=True)
+
     mock_doc.assert_called_once_with(appdir, create=False, docid=None)
+    assert ret_code == 0
 
 
 @patch('couchapp.commands.util')
@@ -115,10 +121,11 @@ def test_push_export_to_file(mock_doc, mock_util):
     appdir = '/mock_dir'
     output_file = '/file'
 
-    commands.push(conf, appdir, export=True, output=output_file)
+    ret_code = commands.push(conf, appdir, export=True, output=output_file)
 
     mock_doc.assert_called_once_with(appdir, create=False, docid=None)
     mock_util.write_json.assert_called_once_with(
         output_file,
         '{"status": "ok"}'
     )
+    assert ret_code == 0
