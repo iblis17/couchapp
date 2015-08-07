@@ -2,8 +2,9 @@
 
 from couchapp import commands
 from couchapp.errors import AppError
+from couchapp.localdoc import document
 
-from mock import Mock, patch
+from mock import Mock, NonCallableMock, patch
 from nose.tools import raises
 
 
@@ -27,36 +28,52 @@ def test_init_dest_none(mock_doc, mock_cwd):
     commands.init(None, None)
 
 
-def test_push_outside():
+@patch('couchapp.commands.hook')
+@patch('couchapp.commands.document', spec=document)
+def test_push_outside(mock_doc, mock_hook):
     '''
-    $ couchapp push /path/to/app
+    $ couchapp push /path/to/app dest
     '''
-    pass
+    conf = NonCallableMock(name='conf')
+    path = None
+    appdir = '/mock_dir'
+    dest = 'http://localhost'
+    hook_expect = [
+        ((conf, appdir, 'pre-push'), {'dbs': dest}),
+        ((conf, appdir, 'post-push'), {'dbs': dest}),
+    ]
+
+    conf.get_dbs.return_value = dest
+
+    commands.push(conf, path, appdir, dest)
+    mock_doc.assert_called_once_with(appdir, create=False, docid=None)
+    mock_doc().push.assert_called_once_with(dest, False, False, False)
+    assert mock_hook.call_args_list == hook_expect
 
 
-@patch('couchapp.commands.document', return_value='{"status": "ok"}')
+@patch('couchapp.commands.document', return_value='{"status": "ok"}',
+       spec=document)
 def test_push_export_outside(mock_doc):
     '''
     $ couchapp push --export /path/to/app
     '''
-    conf = Mock(name='conf')
+    conf = NonCallableMock(name='conf')
     appdir = '/mock_dir'
 
     commands.push(conf, None, appdir, export=True)
     mock_doc.assert_called_once_with(appdir, create=False, docid=None)
-    conf.update.assert_called_once_with(appdir)
 
 
-@patch('couchapp.commands.document', return_value='{"status": "ok"}')
+@patch('couchapp.commands.document', return_value='{"status": "ok"}',
+       spec=document)
 def test_push_export_inside(mock_doc):
     '''
     In the app dir::
 
     $ couchapp push --export
     '''
-    conf = Mock(name='conf')
+    conf = NonCallableMock(name='conf')
     appdir = '/mock_dir'
 
     commands.push(conf, appdir, export=True)
     mock_doc.assert_called_once_with(appdir, create=False, docid=None)
-    conf.update.assert_called_once_with(appdir)
