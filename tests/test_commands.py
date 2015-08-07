@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import os
+
 from couchapp import commands
 from couchapp.errors import AppError
 from couchapp.localdoc import document
@@ -46,9 +48,32 @@ def test_push_outside(mock_doc, mock_hook):
     conf.get_dbs.return_value = dest
 
     commands.push(conf, path, appdir, dest)
+
     mock_doc.assert_called_once_with(appdir, create=False, docid=None)
     mock_doc().push.assert_called_once_with(dest, False, False, False)
     assert mock_hook.call_args_list == hook_expect
+
+
+@patch('os.path.exists')
+@patch('couchapp.commands.pushdocs', spec=commands.pushdocs)
+@patch('couchapp.commands.hook')
+@patch('couchapp.commands.document', spec=document)
+def test_push_with_pushdocs(mock_doc, mock_hook, mock_pushdocs, mock_exists):
+    '''
+    if appdir/_docs exists, push will invoke pushdocs
+    '''
+    conf = NonCallableMock(name='conf')
+    appdir = '/mock_dir'
+    dest = 'http://localhost'
+    docspath = os.path.join(appdir, '_docs')
+
+    def check_docspath(docspath_):
+        return docspath_ == docspath
+    mock_exists.side_effect = check_docspath
+
+    commands.push(conf, appdir, dest)
+
+    mock_pushdocs.assert_called_once_with(conf, docspath, dest, dest)
 
 
 @patch('couchapp.commands.document', return_value='{"status": "ok"}',
