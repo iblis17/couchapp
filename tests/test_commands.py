@@ -102,3 +102,23 @@ def test_push_export_inside(mock_doc):
 
     commands.push(conf, appdir, export=True)
     mock_doc.assert_called_once_with(appdir, create=False, docid=None)
+
+
+@patch('couchapp.commands.util')
+@patch('couchapp.commands.document', return_value='{"status": "ok"}',
+       spec=document)
+def test_push_export_to_file(mock_doc, mock_util):
+    '''
+    $ couchapp push --export --output /path/to/json /appdir
+    '''
+    conf = NonCallableMock(name='conf')
+    appdir = '/mock_dir'
+    output_file = '/file'
+
+    commands.push(conf, appdir, export=True, output=output_file)
+
+    mock_doc.assert_called_once_with(appdir, create=False, docid=None)
+    mock_util.write_json.assert_called_once_with(
+        output_file,
+        '{"status": "ok"}'
+    )
