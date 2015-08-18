@@ -229,11 +229,37 @@ def rcpath():
 
 
 def findcouchapp(p):
+    '''
+    Find couchapp top level dir from sub dir
+    '''
     while not os.path.isfile(os.path.join(p, ".couchapprc")):
         oldp, p = p, os.path.dirname(p)
         if p == oldp:
             return None
     return p
+
+
+def discover_apps(path):
+    '''
+    Given a path as parent dir, depth=1, return a tuple of the couchapps.
+
+    :type path: str
+    '''
+    return tuple(
+        x for x in os.listdir(path)
+        if os.path.isdir(os.path.join(path, x)) and
+           iscouchapp(os.path.join(path, x))
+    )
+
+
+def iscouchapp(path):
+    '''
+    A couchapp MUSH have ``.couchapprc``
+
+    :type path: str
+    :return: bool
+    '''
+    return os.path.isfile(os.path.join(path, '.couchapprc'))
 
 
 def in_couchapp():
