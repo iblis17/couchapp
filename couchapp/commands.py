@@ -87,43 +87,43 @@ def pushapps(conf, source, dest, *args, **opts):
     dbs = conf.get_dbs(dest)
     apps = []
     source = os.path.normpath(os.path.join(os.getcwd(), source))
-    for d in os.listdir(source):
-        appdir = os.path.join(source, d)
-        if os.path.isdir(appdir) and \
-                os.path.isfile(os.path.join(appdir, '.couchapprc')):
-            doc = document(appdir)
-            hook(conf, appdir, "pre-push", dbs=dbs, pushapps=True)
-            if export or not noatomic:
-                apps.append(doc)
-            else:
-                doc.push(dbs, True, browse)
-            hook(conf, appdir, "post-push", dbs=dbs, pushapps=True)
-    if apps:
-        if export:
-            docs = []
-            docs.append([doc.doc() for doc in apps])
-            jsonobj = {'docs': docs}
-            if opts.get('output') is not None:
-                util.write_json(opts.get('output'), util.json.dumps(jsonobj))
-            else:
-                print util.json.dumps(jsonobj)
-            return 0
+
+    for appdir in util.discover_apps(source):
+        doc = document(appdir)
+        hook(conf, appdir, "pre-push", dbs=dbs, pushapps=True)
+        if export or not noatomic:
+            apps.append(doc)
         else:
-            for db in dbs:
-                docs = []
-                docs = [doc.doc(db) for doc in apps]
+            doc.push(dbs, True, browse)
+        hook(conf, appdir, "post-push", dbs=dbs, pushapps=True)
+
+    if not apps:
+        return 0
+
+    if export:
+        docs = []
+        docs.append([doc.doc() for doc in apps])
+        jsonobj = {'docs': docs}
+        if opts.get('output') is not None:
+            util.write_json(opts.get('output'), util.json.dumps(jsonobj))
+        else:
+            print util.json.dumps(jsonobj)
+        return 0
+
+    for db in dbs:
+        docs = [doc.doc(db) for doc in apps]
+        try:
+            db.save_docs(docs)
+        except BulkSaveError as e:
+            docs1 = []
+            for doc in e.errors:
                 try:
-                    db.save_docs(docs)
-                except BulkSaveError, e:
-                    docs1 = []
-                    for doc in e.errors:
-                        try:
-                            doc['_rev'] = db.last_rev(doc['_id'])
-                            docs1.append(doc)
-                        except ResourceNotFound:
-                            pass
-                    if docs1:
-                        db.save_docs(docs1)
+                    doc['_rev'] = db.last_rev(doc['_id'])
+                    docs1.append(doc)
+                except ResourceNotFound:
+                    pass
+            if docs1:
+                db.save_docs(docs1)
     return 0
 
 
