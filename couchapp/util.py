@@ -246,7 +246,7 @@ def discover_apps(path):
     :type path: str
     '''
     return tuple(
-        x for x in os.listdir(path)
+        os.path.join(path, x) for x in os.listdir(path)
         if os.path.isdir(os.path.join(path, x)) and
            iscouchapp(os.path.join(path, x))
     )

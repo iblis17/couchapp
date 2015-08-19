@@ -18,3 +18,12 @@ def test_discover_apps(iscouchapp_, isdir, listdir):
     assert discover_apps('/mock_dir') == ('foo',)
     isdir.assert_called_with('/mock_dir/foo')
     listdir.assert_called_with('/mock_dir')
+
+
+@patch('couchapp.util.os.listdir', return_value=['foo'])
+@patch('couchapp.util.os.path.isdir', return_value=True)
+@patch('couchapp.util.iscouchapp', return_value=True)
+def test_discover_apps_relative_path(iscouchapp_, isdir, listdir):
+    assert discover_apps('mock_dir') == ('mock_dir/foo',)
+    isdir.assert_called_with('mock_dir/foo')
+    listdir.assert_called_with('mock_dir')
