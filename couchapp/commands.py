@@ -101,8 +101,7 @@ def pushapps(conf, source, dest, *args, **opts):
         return 0
 
     if export:
-        docs = []
-        docs.append([doc.doc() for doc in apps])
+        docs = [doc.doc() for doc in apps]
         jsonobj = {'docs': docs}
         if opts.get('output'):
             util.write_json(opts.get('output'), util.json.dumps(jsonobj))
