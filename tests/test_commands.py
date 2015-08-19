@@ -78,8 +78,7 @@ def test_push_with_pushdocs(mock_doc, mock_hook, mock_pushdocs, mock_exists):
     assert ret_code == 0
 
 
-@patch('couchapp.commands.document', return_value='{"status": "ok"}',
-       spec=document)
+@patch('couchapp.commands.document', spec=document)
 def test_push_export_outside(mock_doc):
     '''
     $ couchapp push --export /path/to/app
@@ -93,8 +92,7 @@ def test_push_export_outside(mock_doc):
     assert ret_code == 0
 
 
-@patch('couchapp.commands.document', return_value='{"status": "ok"}',
-       spec=document)
+@patch('couchapp.commands.document', spec=document)
 def test_push_export_inside(mock_doc):
     '''
     In the app dir::

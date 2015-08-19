@@ -386,21 +386,26 @@ def read(fname, utf8=True, force_read=False):
 def write(fname, content):
     """ write content in a file
 
-    :attr fname: string,filename
-    :attr content: string
+    :type fname: string, filename
+    :type content: str
     """
     with open(fname, 'wb') as f:
         f.write(to_bytestring(content))
 
 
-def write_json(fname, content):
-    """ serialize content in json and save it
-
-    :attr fname: string
-    :attr content: string
-
+def write_json(fname, obj):
     """
-    write(fname, json.dumps(content).encode('utf-8'))
+    serialize obj in json and save it
+
+    :type fname: str
+    :param obj: serializable builtin type,
+        or any obj has ``to_json`` method
+    """
+    try:
+        val = json.dumps(obj).encode('utf-8')
+    except TypeError:
+        val = obj.to_json()
+    write(fname, val)
 
 
 def read_json(fname, use_environment=False, raise_on_error=False):

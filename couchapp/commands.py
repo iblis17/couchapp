@@ -64,10 +64,11 @@ def push(conf, path, *args, **opts):
     doc = document(doc_path, create=False, docid=opts.get('docid'))
     if export:
         if opts.get('output'):
-            util.write_json(opts.get('output'), str(doc))
+            util.write_json(opts.get('output'), doc)
         else:
-            print str(doc)
+            print doc.to_json()
         return 0
+
     dbs = conf.get_dbs(dest)
 
     hook(conf, doc_path, "pre-push", dbs=dbs)
@@ -104,7 +105,7 @@ def pushapps(conf, source, dest, *args, **opts):
         docs = [doc.doc() for doc in apps]
         jsonobj = {'docs': docs}
         if opts.get('output'):
-            util.write_json(opts.get('output'), util.json.dumps(jsonobj))
+            util.write_json(opts.get('output'), jsonobj)
         else:
             print util.json.dumps(jsonobj)
         return 0

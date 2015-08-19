@@ -431,6 +431,9 @@ class LocalDoc(object):
             return "%s/%s/index.html" % (dburl, self.docid)
         return False
 
+    def to_json(self):
+        return self.__str__()
+
 
 def document(path, create=False, docid=None, is_ddoc=True):
     return LocalDoc(path, create=create, docid=docid, is_ddoc=is_ddoc)
