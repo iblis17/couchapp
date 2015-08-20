@@ -184,9 +184,9 @@ def test_pushapps_output_null(discover_apps_, hook, document_, write_json):
 
     assert ret == 0
     discover_apps_.assert_called_with('/mock_dir')
-    hook.assert_not_called()
-    document_.assert_not_called()
-    write_json.assert_not_called()
+    assert not hook.called
+    assert not document_.called
+    assert not write_json.called
 
 
 @patch('couchapp.commands.util.json.dumps')
