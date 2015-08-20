@@ -135,3 +135,84 @@ def test_push_app_path_error():
     dest = 'http://localhost'
 
     commands.push(conf, None, dest)
+
+
+@patch('couchapp.commands.util.write_json')
+@patch('couchapp.commands.document', spec=document)
+@patch('couchapp.commands.hook')
+@patch('couchapp.commands.util.discover_apps', return_value=['foo'])
+def test_pushapps_output(discover_apps_, hook, document_, write_json):
+    '''
+    Test case for pushapps with ``--export --output file``
+
+    Algo:
+    1. discover apps
+    #. pre-push
+    #. add app to a list ``apps``
+    #. post-push
+    #. write_json(apps)
+    '''
+    conf = NonCallableMock(name='conf')
+    dest = None
+
+    ret = commands.pushapps(conf, '/mock_dir', dest, export=True, output='file')
+
+    assert ret == 0
+    discover_apps_.assert_called_with('/mock_dir')
+    hook.assert_any_call(conf, 'foo', 'pre-push',
+                         dbs=conf.get_dbs(), pushapps=True)
+    hook.assert_any_call(conf, 'foo', 'post-push',
+                         dbs=conf.get_dbs(), pushapps=True)
+    'file' in write_json.call_args[0]
+
+
+@patch('couchapp.commands.util.write_json')
+@patch('couchapp.commands.document', spec=document)
+@patch('couchapp.commands.hook')
+@patch('couchapp.commands.util.discover_apps', return_value=[])
+def test_pushapps_output_null(discover_apps_, hook, document_, write_json):
+    '''
+    Test case for pushapps with ``--export --output file``,
+    but no any apps discovered
+
+    Algo: see :py:meth:`test_pushapps_output`
+    '''
+    conf = NonCallableMock(name='conf')
+    dest = None
+
+    ret = commands.pushapps(conf, '/mock_dir', dest, export=True, output='file')
+
+    assert ret == 0
+    discover_apps_.assert_called_with('/mock_dir')
+    hook.assert_not_called()
+    document_.assert_not_called()
+    write_json.assert_not_called()
+
+
+@patch('couchapp.commands.util.json.dumps')
+@patch('couchapp.commands.document', spec=document)
+@patch('couchapp.commands.hook')
+@patch('couchapp.commands.util.discover_apps', return_value=['foo'])
+def test_pushapps_export(discover_apps_, hook, document_, dumps):
+    '''
+    Test case for pushapps with ``--export``,
+
+    Algo:
+    1. discover apps
+    #. pre-push
+    #. add app to a list ``apps``
+    #. post-push
+    #. json.dumps from apps
+    '''
+    conf = NonCallableMock(name='conf')
+    dest = None
+
+    ret = commands.pushapps(conf, '/mock_dir', dest, export=True)
+
+    assert ret == 0
+    discover_apps_.assert_called_with('/mock_dir')
+    hook.assert_any_call(conf, 'foo', 'pre-push',
+                         dbs=conf.get_dbs(), pushapps=True)
+    hook.assert_any_call(conf, 'foo', 'post-push',
+                         dbs=conf.get_dbs(), pushapps=True)
+    assert dumps.called

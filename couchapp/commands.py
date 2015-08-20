@@ -88,8 +88,11 @@ def pushapps(conf, source, dest, *args, **opts):
     dbs = conf.get_dbs(dest)
     apps = []
     source = os.path.normpath(os.path.join(os.getcwd(), source))
+    appdirs = util.discover_apps(source)
 
-    for appdir in util.discover_apps(source):
+    logger.debug('Discovered apps: {}'.format(appdirs))
+
+    for appdir in appdirs:
         doc = document(appdir)
         hook(conf, appdir, "pre-push", dbs=dbs, pushapps=True)
         if export or not noatomic:
