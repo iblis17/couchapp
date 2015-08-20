@@ -90,7 +90,7 @@ def pushapps(conf, source, dest, *args, **opts):
     source = os.path.normpath(os.path.join(os.getcwd(), source))
     appdirs = util.discover_apps(source)
 
-    logger.debug('Discovered apps: {}'.format(appdirs))
+    logger.debug('Discovered apps: {0}'.format(appdirs))
 
     for appdir in appdirs:
         doc = document(appdir)
