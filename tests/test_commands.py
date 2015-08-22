@@ -277,3 +277,17 @@ def test_pushapps_default(discover_apps_, hook, document_):
     hook.assert_any_call(conf, 'foo', 'pre-push', dbs=dbs, pushapps=True)
     hook.assert_any_call(conf, 'foo', 'post-push', dbs=dbs, pushapps=True)
     assert db.save_docs.called
+
+
+def test_version_help():
+    '''
+    $ couchapp version -h
+    '''
+    assert commands.version(Mock(), help=True) == 0
+
+
+def test_help_version():
+    '''
+    $ couchapp -h --version
+    '''
+    assert commands.usage(Mock(), version=True) == 0
