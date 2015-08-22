@@ -3,10 +3,10 @@
 import os
 
 from couchapp import commands
-from couchapp.errors import AppError
+from couchapp.errors import AppError, BulkSaveError
 from couchapp.localdoc import document
 
-from mock import Mock, NonCallableMock, patch
+from mock import MagicMock, Mock, NonCallableMock, patch
 from nose.tools import raises
 
 
@@ -155,9 +155,9 @@ def test_pushapps_output(discover_apps_, hook, document_, write_json):
     conf = NonCallableMock(name='conf')
     dest = None
 
-    ret = commands.pushapps(conf, '/mock_dir', dest, export=True, output='file')
+    ret_code = commands.pushapps(conf, '/mock_dir', dest, export=True, output='file')
 
-    assert ret == 0
+    assert ret_code == 0
     discover_apps_.assert_called_with('/mock_dir')
     hook.assert_any_call(conf, 'foo', 'pre-push',
                          dbs=conf.get_dbs(), pushapps=True)
@@ -180,9 +180,9 @@ def test_pushapps_output_null(discover_apps_, hook, document_, write_json):
     conf = NonCallableMock(name='conf')
     dest = None
 
-    ret = commands.pushapps(conf, '/mock_dir', dest, export=True, output='file')
+    ret_code = commands.pushapps(conf, '/mock_dir', dest, export=True, output='file')
 
-    assert ret == 0
+    assert ret_code == 0
     discover_apps_.assert_called_with('/mock_dir')
     assert not hook.called
     assert not document_.called
@@ -207,12 +207,73 @@ def test_pushapps_export(discover_apps_, hook, document_, dumps):
     conf = NonCallableMock(name='conf')
     dest = None
 
-    ret = commands.pushapps(conf, '/mock_dir', dest, export=True)
+    ret_code = commands.pushapps(conf, '/mock_dir', dest, export=True)
 
-    assert ret == 0
+    assert ret_code == 0
     discover_apps_.assert_called_with('/mock_dir')
     hook.assert_any_call(conf, 'foo', 'pre-push',
                          dbs=conf.get_dbs(), pushapps=True)
     hook.assert_any_call(conf, 'foo', 'post-push',
                          dbs=conf.get_dbs(), pushapps=True)
     assert dumps.called
+
+
+@patch('couchapp.commands.document', spec=document)
+@patch('couchapp.commands.hook')
+@patch('couchapp.commands.util.discover_apps', return_value=['foo'])
+def test_pushapps_noatomic(discover_apps_, hook, document_):
+    '''
+    Test case for pushapps with ``--no-atomic``
+
+    Algo:
+    1. discover apps
+
+    #. for each app
+        1. pre-push
+        2. push
+        3. post-push
+    '''
+    conf = NonCallableMock(name='conf')
+    dest = 'http://localhost:5984'
+    doc = document_()
+    dbs = conf.get_dbs()
+
+    ret_code = commands.pushapps(conf, '/mock_dir', dest, no_atomic=True)
+    assert ret_code == 0
+    conf.get_dbs.assert_called_with(dest)
+    hook.assert_any_call(conf, 'foo', 'pre-push', dbs=dbs, pushapps=True)
+    hook.assert_any_call(conf, 'foo', 'post-push', dbs=dbs, pushapps=True)
+    doc.push.assert_called_with(dbs, True, False)
+
+
+@patch('couchapp.commands.document', spec=document)
+@patch('couchapp.commands.hook')
+@patch('couchapp.commands.util.discover_apps', return_value=['foo'])
+def test_pushapps_default(discover_apps_, hook, document_):
+    '''
+    Test case for ``pushapps {path}`` with default flags
+
+    Algo:
+    1. discover apps
+
+    #. for each app
+        1. pre-push
+        2. add to list apps
+        3. post-push
+
+    #. for each db
+        1. db.save_docs
+    '''
+    conf = NonCallableMock(name='conf')
+    dest = 'http://localhost:5984'
+    doc = document_()
+    db = Mock(name='db')
+    dbs = MagicMock(name='dbs')
+    dbs.__iter__.return_value = iter([db])
+    conf.get_dbs.return_value = dbs
+
+    ret_code = commands.pushapps(conf, '/mock_dir', dest)
+    conf.get_dbs.assert_called_with(dest)
+    hook.assert_any_call(conf, 'foo', 'pre-push', dbs=dbs, pushapps=True)
+    hook.assert_any_call(conf, 'foo', 'post-push', dbs=dbs, pushapps=True)
+    assert db.save_docs.called
