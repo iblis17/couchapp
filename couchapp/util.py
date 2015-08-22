@@ -241,15 +241,21 @@ def findcouchapp(p):
 
 def discover_apps(path):
     '''
-    Given a path as parent dir, depth=1, return a tuple of the couchapps.
+    Given a path as parent dir, depth=1, return a list of the couchapps.
+    It will ignore all hidden dir.
 
     :type path: str
     '''
-    return tuple(
-        os.path.join(path, x) for x in os.listdir(path)
-        if os.path.isdir(os.path.join(path, x)) and
-           iscouchapp(os.path.join(path, x))
-    )
+    apps = []
+
+    for item in os.listdir(path):
+        full_path = os.path.join(path, item)
+        if item.startswith('.'):  # skip hidden file
+            continue
+        elif os.path.isdir(full_path) and iscouchapp(full_path):
+            apps.append(full_path)
+
+    return apps
 
 
 def iscouchapp(path):

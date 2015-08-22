@@ -15,7 +15,7 @@ def test_iscouchapp(isfile):
 @patch('couchapp.util.os.path.isdir', return_value=True)
 @patch('couchapp.util.iscouchapp', return_value=True)
 def test_discover_apps(iscouchapp_, isdir, listdir):
-    assert discover_apps('/mock_dir') == ('/mock_dir/foo',)
+    assert discover_apps('/mock_dir') == ['/mock_dir/foo']
     isdir.assert_called_with('/mock_dir/foo')
     listdir.assert_called_with('/mock_dir')
 
@@ -24,6 +24,18 @@ def test_discover_apps(iscouchapp_, isdir, listdir):
 @patch('couchapp.util.os.path.isdir', return_value=True)
 @patch('couchapp.util.iscouchapp', return_value=True)
 def test_discover_apps_relative_path(iscouchapp_, isdir, listdir):
-    assert discover_apps('mock_dir') == ('mock_dir/foo',)
+    assert discover_apps('mock_dir') == ['mock_dir/foo']
+    isdir.assert_called_with('mock_dir/foo')
+    listdir.assert_called_with('mock_dir')
+
+
+@patch('couchapp.util.os.listdir', return_value=['.git', 'foo'])
+@patch('couchapp.util.os.path.isdir', return_value=True)
+@patch('couchapp.util.iscouchapp', return_value=True)
+def test_discover_apps_hidden_file(iscouchapp_, isdir, listdir):
+    '''
+    Test case for a dir including hidden file
+    '''
+    assert discover_apps('mock_dir') == ['mock_dir/foo']
     isdir.assert_called_with('mock_dir/foo')
     listdir.assert_called_with('mock_dir')
