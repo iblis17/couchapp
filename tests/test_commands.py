@@ -309,3 +309,76 @@ def test_clone_default(clone, hook):
     hook.assert_any_call(conf, dest, 'pre-clone', source=src)
     clone.assert_called_with(src, None, rev=None)
     hook.assert_any_call(conf, dest, 'post-clone', source=src)
+
+
+@patch('couchapp.commands.os.getcwd', return_value='/')
+@patch('couchapp.commands.generator.generate')
+def test_startapp_default(generate, getcwd):
+    '''
+    $ couchapp startapp {name}
+    '''
+    conf = NonCallableMock(name='conf')
+    name = 'mock'
+
+    ret_code = commands.startapp(conf, name)
+    assert ret_code == 0
+    generate.assert_called_with('/mock', 'startapp', name)
+
+
+@patch('couchapp.commands.os.getcwd')
+@patch('couchapp.commands.generator.generate')
+def test_startapp_default(generate, getcwd):
+    '''
+    $ couchapp startapp {dir} {name}
+    '''
+    conf = NonCallableMock(name='conf')
+    dir_ = '/'
+    name = 'mock'
+
+    ret_code = commands.startapp(conf, dir_, name)
+    assert ret_code == 0
+    assert not getcwd.called
+    generate.assert_called_with('/mock', 'startapp', name)
+
+
+@raises(AppError)
+@patch('couchapp.commands.os.getcwd', return_value='/')
+@patch('couchapp.commands.generator.generate')
+def test_startapp_without_name(generate, getcwd):
+    '''
+    $ couchapp startapp
+    '''
+    conf = NonCallableMock(name='conf')
+
+    ret_code = commands.startapp(conf)
+    assert not generate.called
+
+
+@raises(AppError)
+@patch('couchapp.commands.util.iscouchapp', return_value=True)
+@patch('couchapp.commands.os.getcwd', return_value='/')
+@patch('couchapp.commands.generator.generate')
+def test_startapp_exists(generate, getcwd, iscouchapp_):
+    '''
+    $ couchapp startapp {already exists app}
+    '''
+    conf = NonCallableMock(name='conf')
+
+    ret_code = commands.startapp(conf)
+    assert not generate.called
+
+
+@raises(AppError)
+@patch('couchapp.commands.util.iscouchapp', return_value=True)
+@patch('couchapp.commands.os.getcwd', return_value='/')
+@patch('couchapp.commands.generator.generate')
+def test_startapp_exists(generate, getcwd, iscouchapp_):
+    '''
+    $ couchapp startapp {already exists app}
+    '''
+    conf = NonCallableMock(name='conf')
+    name = 'mock'
+
+    ret_code = commands.startapp(conf, name)
+    assert iscouchapp_.assert_called_with('/mock')
+    assert not generate.called

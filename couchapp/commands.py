@@ -218,11 +218,11 @@ def startapp(conf, *args, **opts):
         dest = os.path.normpath(os.path.join(os.getcwd(), ".", name))
     elif len(args) == 2:
         name = args[1]
-        dest = os.path.normpath(os.path.join(args[0], args[1]))
+        dest = os.path.normpath(os.path.join(args[0], name))
 
-    if os.path.isfile(os.path.join(dest, ".couchapprc")):
-        raise AppError("can't create an app at '%s'. One already exists here" %
-                       dest)
+    if util.iscouchapp(dest):
+        raise AppError("can't create an app at '%s'. "
+                       "One already exists here.".format(dest))
 
     generator.generate(dest, "startapp", name, **opts)
     return 0
