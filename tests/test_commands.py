@@ -273,6 +273,7 @@ def test_pushapps_default(discover_apps_, hook, document_):
     conf.get_dbs.return_value = dbs
 
     ret_code = commands.pushapps(conf, '/mock_dir', dest)
+    assert ret_code == 0
     conf.get_dbs.assert_called_with(dest)
     hook.assert_any_call(conf, 'foo', 'pre-push', dbs=dbs, pushapps=True)
     hook.assert_any_call(conf, 'foo', 'post-push', dbs=dbs, pushapps=True)
@@ -291,3 +292,20 @@ def test_help_version():
     $ couchapp -h --version
     '''
     assert commands.usage(Mock(), version=True) == 0
+
+
+@patch('couchapp.commands.hook')
+@patch('couchapp.commands.clone_app.clone')
+def test_clone_default(clone, hook):
+    '''
+    $ couchapp clone {source}
+    '''
+    conf = NonCallableMock(name='conf')
+    src = 'http://localhost:5984/test'
+    dest = None
+
+    ret_code = commands.clone(conf, src)
+    assert ret_code == 0
+    hook.assert_any_call(conf, dest, 'pre-clone', source=src)
+    clone.assert_called_with(src, None, rev=None)
+    hook.assert_any_call(conf, dest, 'post-clone', source=src)

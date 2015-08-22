@@ -166,8 +166,8 @@ def pushdocs(conf, source, dest, *args, **opts):
                 else:
                     docs1.append(doc)
             jsonobj = {'docs': docs}
-            if opts.get('output') is not None:
-                util.write_json(opts.get('output'), util.json.dumps(jsonobj))
+            if opts.get('output'):
+                util.write_json(opts.get('output'), jsonobj)
             else:
                 print util.json.dumps(jsonobj)
         else:
@@ -201,10 +201,8 @@ def pushdocs(conf, source, dest, *args, **opts):
 
 
 def clone(conf, source, *args, **opts):
-    if len(args) > 0:
-        dest = args[0]
-    else:
-        dest = None
+    dest = args[0] if len(args) > 0 else None
+
     hook(conf, dest, "pre-clone", source=source)
     clone_app.clone(source, dest, rev=opts.get('rev'))
     hook(conf, dest, "post-clone", source=source)
