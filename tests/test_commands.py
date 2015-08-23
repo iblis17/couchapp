@@ -358,7 +358,7 @@ def test_startapp_without_name(generate, getcwd):
 @patch('couchapp.commands.util.iscouchapp', return_value=True)
 @patch('couchapp.commands.os.getcwd', return_value='/')
 @patch('couchapp.commands.generator.generate')
-def test_startapp_exists(generate, getcwd, iscouchapp_):
+def test_startapp_exists(generate, getcwd, iscouchapp):
     '''
     $ couchapp startapp {already exists app}
     '''
@@ -372,7 +372,7 @@ def test_startapp_exists(generate, getcwd, iscouchapp_):
 @patch('couchapp.commands.util.iscouchapp', return_value=True)
 @patch('couchapp.commands.os.getcwd', return_value='/')
 @patch('couchapp.commands.generator.generate')
-def test_startapp_exists(generate, getcwd, iscouchapp_):
+def test_startapp_exists(generate, getcwd, iscouchapp):
     '''
     $ couchapp startapp {already exists app}
     '''
@@ -380,5 +380,54 @@ def test_startapp_exists(generate, getcwd, iscouchapp_):
     name = 'mock'
 
     ret_code = commands.startapp(conf, name)
-    assert iscouchapp_.assert_called_with('/mock')
+    assert iscouchapp.assert_called_with('/mock')
     assert not generate.called
+
+
+@patch('couchapp.commands.util.iscouchapp', return_value=True)
+@patch('couchapp.commands.document')
+def test_browse_default(document, iscouchapp):
+    '''
+    $ couchapp browse {app} {db url}
+    '''
+    conf = NonCallableMock(name='conf')
+    app = '/mock_dir'
+    dest = 'http://localhost:5984'
+    doc = document()
+
+    ret_code = commands.browse(conf, app, dest)
+    iscouchapp.assert_called_with('/mock_dir')
+    assert doc.browse.called
+
+
+@patch('os.getcwd', return_value='/mock_dir/app')
+@patch('couchapp.commands.util.iscouchapp', return_value=True)
+@patch('couchapp.commands.document')
+def test_browse_dest_only(document, iscouchapp, getcwd):
+    '''
+    $ couchapp browse {db url}
+    '''
+    conf = NonCallableMock(name='conf')
+    dest = 'http://localhost:5984'
+    doc = document()
+
+    ret_code = commands.browse(conf, dest)
+    iscouchapp.assert_called_with('/mock_dir/app')
+    assert doc.browse.called
+
+
+@raises(AppError)
+@patch('couchapp.commands.util.iscouchapp', return_value=False)
+@patch('couchapp.commands.document')
+def test_browse_exist(document, iscouchapp):
+    '''
+    $ couchapp browse {not app dir} {db url}
+    '''
+    conf = NonCallableMock(name='conf')
+    app = '/mock_dir/notapp'
+    dest = 'http://localhost:5984'
+    doc = document()
+
+    ret_code = commands.browse(conf, app, dest)
+    iscouchapp.assert_called_with('/mock_dir/notapp')
+    assert not doc.browse.called

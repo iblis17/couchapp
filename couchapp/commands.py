@@ -298,17 +298,16 @@ def vendor(conf, path, *args, **opts):
 
 
 def browse(conf, path, *args, **opts):
-    dest = None
-    doc_path = None
-    if len(args) < 2:
-        doc_path = path
-        if args:
-            dest = args[0]
+    if len(args) == 0:
+        dest = path
+        doc_path = '.'
     else:
-        doc_path = os.path.normpath(os.path.join(os.getcwd(), args[0]))
-        dest = args[1]
-    if doc_path is None:
-        raise AppError("You aren't in a couchapp.")
+        doc_path = path
+        dest = args[0]
+
+    doc_path = os.path.normpath(os.path.join(os.getcwd(), doc_path))
+    if not util.iscouchapp(doc_path):
+        raise AppError("Dir '{0}' is not a couchapp.".format(doc_path))
 
     conf.update(doc_path)
 
