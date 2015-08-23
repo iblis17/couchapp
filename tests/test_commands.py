@@ -465,9 +465,72 @@ def test_generate_inside():
     '''
     $ couchapp generate app {path inside another app}
 
-    This should raise AppError
+    This should raise AppError.
     '''
     conf = NonCallableMock(name='conf')
     app = '/mock/app'
 
-    ret_code = commands.generate(conf, app, 'app', 'mockapp')
+    commands.generate(conf, app, 'app', 'mockapp')
+
+
+@raises(AppError)
+def test_generate_miss_name():
+    '''
+    $ couchapp generate
+
+    This should raise AppError.
+    '''
+    conf = NonCallableMock(name='conf')
+    app = '/mock/app'
+
+    commands.generate(conf, app)
+
+
+@raises(AppError)
+def test_generate_view_outside_app():
+    '''
+    $ couchapp generate view myview
+
+    But outside app dir.
+    This should raise AppError.
+    '''
+    conf = NonCallableMock(name='conf')
+
+    commands.generate(conf, None, 'view', 'myview')
+
+
+@patch('couchapp.commands.os.getcwd', return_value='/mock')
+@patch('couchapp.commands.generator.generate')
+@patch('couchapp.commands.hook')
+def test_generate_app(hook, generate, getcwd):
+    '''
+    $ couchapp generate myapp
+    '''
+    conf = NonCallableMock(name='conf')
+    kind = 'app'
+    name = 'myapp'
+
+    ret_code = commands.generate(conf, None, name)
+    assert ret_code == 0
+    generate.assert_called_with('/mock/myapp', kind, name, create=True)
+    hook.assert_any_call(conf, '/mock/myapp', 'pre-generate')
+    hook.assert_any_call(conf, '/mock/myapp', 'post-generate')
+
+
+@patch('couchapp.commands.os.getcwd', return_value='/mock')
+@patch('couchapp.commands.generator.generate')
+@patch('couchapp.commands.hook')
+def test_generate_view_outside_app(hook, generate, getcwd):
+    '''
+    $ couchapp generate view myapp myview
+    '''
+    conf = NonCallableMock(name='conf')
+    kind = 'view'
+    dest = 'myapp'
+    name = 'myview'
+
+    ret_code = commands.generate(conf, None, kind, dest, name)
+    assert ret_code == 0
+    generate.assert_called_with(dest, kind, name)
+    hook.assert_any_call(conf, dest, 'pre-generate')
+    hook.assert_any_call(conf, dest, 'post-generate')
