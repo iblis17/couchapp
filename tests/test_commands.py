@@ -384,6 +384,33 @@ def test_startapp_exists(generate, getcwd, iscouchapp):
     assert not generate.called
 
 
+@raises(AppError)
+@patch('couchapp.commands.util.findcouchapp', return_value=True)
+@patch('couchapp.commands.util.iscouchapp', return_value=False)
+@patch('couchapp.commands.os.getcwd', return_value='/')
+@patch('couchapp.commands.generator.generate')
+def test_startapp_inside_app(generate, getcwd, iscouchapp, findcouchapp):
+    '''
+    $ couchapp startapp {path in another app}
+
+    e.g. Assume there is a couchapp ``app1``
+
+    ::
+        app1/
+            .couchapprc
+            ...
+
+    We try to ``couchapp startapp app1/app2``,
+    and this should raise `AppError`.
+    '''
+    conf = NonCallableMock(name='conf')
+    name = 'mock'
+
+    ret_code = commands.startapp(conf, name)
+    assert findcouchapp.assert_called_with('/mock')
+    assert not generate.called
+
+
 @patch('couchapp.commands.util.iscouchapp', return_value=True)
 @patch('couchapp.commands.document')
 def test_browse_default(document, iscouchapp):
@@ -431,3 +458,16 @@ def test_browse_exist(document, iscouchapp):
     ret_code = commands.browse(conf, app, dest)
     iscouchapp.assert_called_with('/mock_dir/notapp')
     assert not doc.browse.called
+
+
+@raises(AppError)
+def test_generate_inside():
+    '''
+    $ couchapp generate app {path inside another app}
+
+    This should raise AppError
+    '''
+    conf = NonCallableMock(name='conf')
+    app = '/mock/app'
+
+    ret_code = commands.generate(conf, app, 'app', 'mockapp')

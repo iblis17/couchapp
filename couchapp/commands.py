@@ -223,12 +223,18 @@ def startapp(conf, *args, **opts):
     if util.iscouchapp(dest):
         raise AppError("can't create an app at '%s'. "
                        "One already exists here.".format(dest))
+    if util.findcouchapp(dest):
+        raise AppError("can't create an app inside another app '{0}'.".format(
+                       util.findcouchapp(dest)))
 
     generator.generate(dest, "startapp", name, **opts)
     return 0
 
 
 def generate(conf, path, *args, **opts):
+    '''
+    :param path: result of util.findcouchapp
+    '''
     dest = path
     if len(args) < 1:
         raise AppError("Can't generate function, name or path is missing")
@@ -246,10 +252,13 @@ def generate(conf, path, *args, **opts):
 
     if dest is None:
         if kind == "app":
-            dest = os.path.normpath(os.path.join(os.getcwd(), ".", name))
+            dest = os.path.normpath(os.path.join(os.getcwd(), name))
             opts['create'] = True
         else:
             raise AppError("You aren't in a couchapp.")
+    elif dest and kind == 'app':
+        raise AppError("can't create an app inside another app '{0}'.".format(
+                       dest))
 
     hook(conf, dest, "pre-generate")
     generator.generate(dest, kind, name, **opts)
