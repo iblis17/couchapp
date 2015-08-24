@@ -487,7 +487,7 @@ def test_generate_miss_name():
 
 
 @raises(AppError)
-def test_generate_view_outside_app():
+def test_generate_view_without_app():
     '''
     $ couchapp generate view myview
 
