@@ -54,3 +54,11 @@ class TestConfig():
         assert self.config['conf'] == Config.DEFAULTS
         assert self.config['env'] == {}
         assert self.config['mock']  # raise KeyError
+
+    def test_contains(self):
+        '''
+        Test case for Config.__contains__()
+        '''
+        assert 'env' in self.config
+        assert 'hooks' in self.config
+        assert 'extensions' in self.config
