@@ -80,7 +80,7 @@ class Config(object):
             return getattr(self, key)
         except AttributeError:
             pass
-        return self.conf[key]
+        return self.conf.get(key, default)
 
     def __getitem__(self, key):
         try:
