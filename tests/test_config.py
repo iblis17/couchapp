@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from couchapp.config import Config
+from couchapp.errors import AppError
 
 from mock import Mock, patch
 from nose.tools import raises, with_setup
@@ -62,3 +63,57 @@ class TestConfig():
         assert 'env' in self.config
         assert 'hooks' in self.config
         assert 'extensions' in self.config
+
+    @patch('couchapp.config.util.read_json', return_value={'mock': True})
+    @patch('couchapp.config.os.path.isfile', return_value=True)
+    def test_load_from_list(self, isfile, read_json):
+        '''
+        Test case for Config.load(list, default)
+        '''
+        default = {'foo': 'bar'}
+
+        conf = self.config.load(['/mock/couchapp.conf'], default)
+
+        assert conf == {'foo': 'bar', 'mock': True}
+        isfile.assert_called_with('/mock/couchapp.conf')
+        read_json.assert_called_with('/mock/couchapp.conf',
+                                     use_environment=True,
+                                     raise_on_error=True)
+
+    @patch('couchapp.config.util.read_json', return_value={'mock': True})
+    @patch('couchapp.config.os.path.isfile', return_value=True)
+    def test_load_from_str(self, isfile, read_json):
+        '''
+        Test case for Config.load(str)
+        '''
+        conf = self.config.load('/mock/couchapp.conf')
+
+        assert conf == {'mock': True}
+        isfile.assert_called_with('/mock/couchapp.conf')
+        read_json.assert_called_with('/mock/couchapp.conf',
+                                     use_environment=True,
+                                     raise_on_error=True)
+
+    @patch('couchapp.config.util.read_json', return_value={'mock': True})
+    @patch('couchapp.config.os.path.isfile', return_value=False)
+    def test_load_notfile(self, isfile, read_json):
+        '''
+        Test case for Config.load(['/not_a_file'], default)
+        '''
+        default = {'foo': 'bar'}
+
+        conf = self.config.load(['/not_a_file'], default)
+
+        assert conf == {'foo': 'bar'}
+        isfile.assert_called_with('/not_a_file')
+        assert not read_json.called
+
+    @raises(AppError)
+    @patch('couchapp.config.util.read_json', side_effect=ValueError)
+    @patch('couchapp.config.os.path.isfile', return_value=True)
+    def test_load_apperror(self, isfile, read_json):
+        '''
+        Test case for Config.load() reading a invalid file
+        '''
+        self.config.load('/mock/couchapp.conf')
+        isfile.assert_called_with('/mock/couchapp.conf')

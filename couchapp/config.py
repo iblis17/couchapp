@@ -34,22 +34,23 @@ class Config(object):
         self.conf.update(self.local_conf)
 
     def load(self, path, default=None):
-        """ load config """
-        conf = default
+        """
+        load config
 
-        if isinstance(path, basestring):
-            paths = [path]
-        else:
-            paths = path
+        :type path: str or iterable
+        """
+        conf = default if default is not None else {}
+        paths = [path] if isinstance(path, basestring) else path
 
         for p in paths:
-            if os.path.isfile(p):
-                try:
-                    new_conf = util.read_json(p, use_environment=True,
-                                              raise_on_error=True)
-                except ValueError:
-                    raise AppError("Error while reading %s" % p)
-                conf.update(new_conf)
+            if not os.path.isfile(p):
+                continue
+            try:
+                new_conf = util.read_json(p, use_environment=True,
+                                          raise_on_error=True)
+            except ValueError:
+                raise AppError("Error while reading '{0}'".format(p))
+            conf.update(new_conf)
 
         return conf
 
