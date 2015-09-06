@@ -29,6 +29,19 @@ def test_config_init(rcpath, getcwd):
     assert config.conf == Config.DEFAULTS
 
 
+@patch('couchapp.config.Config.load_local', return_value={'mock': True})
+@patch('couchapp.config.util.findcouchapp', return_value='/mockapp')
+@patch('couchapp.config.util.rcpath', return_value=['/mock/couchapp.conf'])
+def test_config_init_local(rcpath, getcwd, local_conf):
+    '''
+    Test case for Config.__init__() in a CouchApp
+    '''
+    config = Config()
+    
+    local_conf.assert_called_with('/mockapp')
+    assert config.local_conf == {'mock': True}, config.local_conf
+
+
 class TestConfig():
     @patch('couchapp.config.util.findcouchapp', return_value=None)
     @patch('couchapp.config.util.rcpath', return_value=['/mock/couchapp.conf'])
@@ -117,3 +130,22 @@ class TestConfig():
         '''
         self.config.load('/mock/couchapp.conf')
         isfile.assert_called_with('/mock/couchapp.conf')
+
+    @patch('couchapp.config.Config.load', return_value='mock')
+    def test_load_local(self, load):
+        '''
+        Test case for Config.load_local()
+        '''
+        assert self.config.load_local('/mock') == 'mock'
+
+        paths = tuple(load.call_args[0][0])
+        assert paths == ('/mock/couchapp.json', '/mock/.couchapprc'), paths
+
+    @raises(AppError)
+    @patch('couchapp.config.Config.load')
+    def test_load_local_apperror(self, load):
+        '''
+        Test case for Config.load_local() with empty `app_dir`
+        '''
+        self.config.load_local(None)
+        assert not load.called

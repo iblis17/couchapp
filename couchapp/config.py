@@ -55,11 +55,16 @@ class Config(object):
         return conf
 
     def load_local(self, app_path):
-        """ load local config """
-        paths = []
-        for fname in ['couchapp.json', '.couchapprc']:
-            paths.append(os.path.join(app_path, fname))
-        return self.load(paths, {})
+        """
+        Load local config from app/couchapp.json and app/.couchapprc.
+        If both of them contain same vars, the latter one will win.
+        """
+        if not app_path:
+            raise AppError("You aren't in a couchapp.")
+
+        fnames = ('couchapp.json', '.couchapprc')
+        paths = (os.path.join(app_path, fname) for fname in fnames)
+        return self.load(paths)
 
     def update(self, path):
         self.conf = self.global_conf.copy()
