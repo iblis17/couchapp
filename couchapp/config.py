@@ -115,15 +115,10 @@ class Config(object):
 
     @property
     def hooks(self):
-        hooks = {}
-        if not "hooks" in self.conf:
-            return hooks
-        for hooktype, uris in self.conf.get("hooks").items():
-            scripts = []
-            for uri in uris:
-                scripts.append(util.hook_uri(uri, self))
-            hooks[hooktype] = scripts
-        return hooks
+        return {
+            hooktype: [util.hook_uri(uri, self) for uri in uris]
+                      for hooktype, uris in self.conf.get('hooks', {}).items()
+        }
 
     # TODO: add oauth management
     def get_dbs(self, db_string=None):
