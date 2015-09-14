@@ -67,6 +67,9 @@ class Config(object):
         return self.load(paths)
 
     def update(self, path):
+        '''
+        Given a couchapp path, and load the configs from it.
+        '''
         self.conf = self.global_conf.copy()
         self.local_conf.update(self.load_local(path))
         self.conf.update(self.local_conf)
