@@ -159,3 +159,22 @@ class TestConfig():
 
         assert self.config.conf.get('mock') == True
         load_local.assert_called_with('/mock')
+
+    @patch('couchapp.config.util.load_py')
+    def test_extensions_empty(self, load_py):
+        '''
+        Test case for empty Config.extensions
+        '''
+        assert self.config.extensions == []
+        assert not load_py.called
+
+    @patch('couchapp.config.util.load_py', return_value='mock')
+    def test_extensions_mock(self, load_py):
+        '''
+        Test case for Config.extensions
+        '''
+        self.config.conf['extensions'] = ['mock_path']
+        extensions = self.config.extensions
+
+        assert extensions == ['mock'], extensions
+        load_py.assert_called_with('mock_path', self.config)

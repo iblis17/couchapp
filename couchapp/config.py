@@ -105,14 +105,13 @@ class Config(object):
 
     @property
     def extensions(self):
-        """ load extensions from conf """
-        extensions_list = []
-        if not "extensions" in self.conf:
-            return extensions_list
-        for uri in self.conf.get('extensions'):
-            script = util.load_py(uri, self)
-            extensions_list.append(script)
-        return extensions_list
+        '''
+        load extensions from conf
+
+        :return: list of extension modules
+        '''
+        return [util.load_py(uri, self)
+                for uri in self.conf.get('extensions', tuple())]
 
     @property
     def hooks(self):
