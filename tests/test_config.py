@@ -178,3 +178,22 @@ class TestConfig():
 
         assert extensions == ['mock'], extensions
         load_py.assert_called_with('mock_path', self.config)
+
+    @patch('couchapp.config.util.hook_uri')
+    def test_hook_empty(self, hook_uri):
+        '''
+        Test case for empty Config.hooks
+        '''
+        assert self.config.hooks == {}
+        assert not hook_uri.called
+
+    @patch('couchapp.config.util.hook_uri', return_value='mock_module')
+    def test_hook_mock(self, hook_uri):
+        '''
+        Test case for Config.hooks
+        '''
+        self.config.conf['hooks'] = {'pre-push': ['mock_path']}
+        hooks = self.config.hooks
+
+        assert hooks == {'pre-push': ['mock_module']}, hooks
+        hook_uri.assert_called_with('mock_path', self.config)
