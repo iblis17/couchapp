@@ -122,29 +122,32 @@ class Config(object):
 
     # TODO: add oauth management
     def get_dbs(self, db_string=None):
+        '''
+        :type db_string: str
+        '''
         db_string = db_string or ''
-        if db_string.startswith("http://") or \
-                db_string.startswith("https://") or \
-                db_string.startswith("desktopcouch://"):
+        env = self.conf.get('env', {})
+        is_full_uri = any(map(db_string.startswith,
+                              ('http://', 'https://', 'desktopcouch://')))
+
+        if not db_string and 'default' not in env:
+            raise AppError("database isn't specified")
+        elif not db_string and 'default' in env:
+            dburls = env['default']['db']
+        elif is_full_uri:
             dburls = db_string
-        else:
-            env = self.conf.get('env', {})
-            if not db_string:
-                # get default db if it exists
-                if 'default' in env:
-                    dburls = env['default']['db']
-                else:
-                    raise AppError("database isn't specified")
-            else:
-                dburls = "%s/%s" % (self.DEFAULT_SERVER_URI, db_string)
-                if db_string in env:
-                    dburls = env[db_string].get('db', dburls)
+        elif not is_full_uri:
+            conf_uri = env.get(db_string, {}).get('db')
+            default_uri = '{0}/{1}'.format(self.DEFAULT_SERVER_URI, db_string)
+
+            dburls = conf_uri if conf_uri else default_uri
+
+            del conf_uri, default_uri
 
         if isinstance(dburls, basestring):
             dburls = [dburls]
 
-        use_proxy = os.environ.get("http_proxy", "") != "" or \
-            os.environ.get("https_proxy", "") != ""
+        use_proxy = any(k in os.environ for k in ('http_proxy', 'https_proxy'))
 
         return [Database(dburl, use_proxy=use_proxy) for dburl in dburls]
 
