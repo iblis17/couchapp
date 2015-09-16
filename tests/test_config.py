@@ -249,6 +249,29 @@ class TestConfig():
         Database.assert_called_with('http://foo.bar', use_proxy=False)
 
     @patch('couchapp.config.Database', return_value='mockdb')
+    def test_get_dbs_env_fake(self, Database):
+        '''
+        Test case for Config.get_dbs() with an useless env
+
+        Assume .couchapprc is (no `db` field in `foo`)
+        ```
+        {
+            'foo':{
+                'notdb': 'mock'
+            }
+        }
+        ```
+
+        Expect behavior: fall back to DEFAULT_SERVER_URI/foo
+        '''
+        self.config.conf['env'] = {'foo': {'notdb': 'mock'}}
+        default_uri = 'http://127.0.0.1:5984/foo'
+
+        assert self.config.get_dbs('foo') == ['mockdb']
+        Database.assert_called_with(default_uri, use_proxy=False)
+
+
+    @patch('couchapp.config.Database', return_value='mockdb')
     def test_get_dbs_proxy(self, Database):
         '''
         Test case for Config.get_dbs() with https_proxy env
