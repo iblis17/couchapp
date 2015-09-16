@@ -10,7 +10,7 @@ The newest install instructions are always in the
 Requirements
 ------------
 
--  Python 2.x >= 2.6 (Python 3.x will be supported soon)
+-  Python 2.7 (Python 3.x will be supported soon)
 -  the header files of the Python version that is used, which are
    included e.g. in the according development package ``python-dev``
    (may have a different name depending on your system)

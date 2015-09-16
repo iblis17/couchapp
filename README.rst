@@ -36,7 +36,7 @@ connectivity.
 Installation
 ------------
 
-Couchapp requires Python 2.6 or greater. Couchapp is most easily installed 
+Couchapp requires Python 2.7. Couchapp is most easily installed
 using the latest versions of the standard python packaging tools, setuptools 
 and pip. They may be installed like so::
 
