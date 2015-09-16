@@ -197,3 +197,63 @@ class TestConfig():
 
         assert hooks == {'pre-push': ['mock_module']}, hooks
         hook_uri.assert_called_with('mock_path', self.config)
+
+    @patch('couchapp.config.Database', return_value='mockdb')
+    def test_get_dbs_full_uri(self, Database):
+        '''
+        Test case for Config.get_dbs() with full uri
+        '''
+        db_string = 'https://foo.bar'
+
+        assert self.config.get_dbs(db_string) == ['mockdb']
+        Database.assert_called_with(db_string, use_proxy=False)
+
+    @patch('couchapp.config.Database', return_value='mockdb')
+    def test_get_dbs_short_uri(self, Database):
+        '''
+        Test case for Config.get_dbs() with short uri
+        '''
+        full_uri = 'http://127.0.0.1:5984/foo'
+
+        assert self.config.get_dbs('foo') == ['mockdb']
+        Database.assert_called_with(full_uri, use_proxy=False)
+
+    @patch('couchapp.config.Database', return_value='mockdb')
+    def test_get_dbs_env(self, Database):
+        '''
+        Test case for Config.get_dbs() with env set
+        '''
+        db_string = 'http://foo.bar'
+        self.config.conf['env'] = {'default': {'db': db_string}}
+
+        assert self.config.get_dbs() == ['mockdb']
+        Database.assert_called_with(db_string, use_proxy=False)
+
+    @raises(AppError)
+    @patch('couchapp.config.Database')
+    def test_get_dbs_empty_env(self, Database):
+        '''
+        Test case for Config.get_dbs() without env set
+        '''
+        self.config.get_dbs()
+        assert not Database.called
+
+    @patch('couchapp.config.Database', return_value='mockdb')
+    def test_get_dbs_short_env(self, Database):
+        '''
+        Test case for Config.get_dbs() with a short name in env
+        '''
+        self.config.conf['env'] = {'foo': {'db': 'http://foo.bar'}}
+
+        assert self.config.get_dbs('foo') == ['mockdb']
+        Database.assert_called_with('http://foo.bar', use_proxy=False)
+
+    @patch('couchapp.config.Database', return_value='mockdb')
+    def test_get_dbs_proxy(self, Database):
+        '''
+        Test case for Config.get_dbs() with https_proxy env
+        '''
+        with patch.dict('couchapp.config.os.environ', {'https_proxy': 'foo'}):
+            assert self.config.get_dbs('https://bar') == ['mockdb']
+
+        Database.assert_called_with('https://bar', use_proxy=True)
