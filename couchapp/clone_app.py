@@ -3,18 +3,16 @@
 # This file is part of couchapp released under the Apache 2 license.
 # See the NOTICE for more information.
 
-from __future__ import with_statement
-
 import base64
 import copy
-from hashlib import md5
 import logging
 import os
-import os.path
 
+from hashlib import md5
+
+from couchapp import client, util
 from couchapp.errors import AppError
-from couchapp import client
-from couchapp import util
+
 
 logger = logging.getLogger(__name__)
 
