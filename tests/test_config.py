@@ -309,11 +309,14 @@ class TestConfig():
         self.config.conf['env'] = {'mockname': {'name': 'MockApp2'}}
         assert self.config.get_app_name('mockname') == 'MockApp2'
 
+        self.config.conf['env'] = {'default': {'name': 'MockApp3'}}
+        assert self.config.get_app_name('strang') == 'MockApp3'
+
     def test_get_app_name_http_uri(self):
         '''
         Test case for Config.get_app_name('http://foo.bar', default)
 
-        if the dbstring is full uri, return ``default``
+        If the dbstring is full uri, return ``default``
         '''
         ret = self.config.get_app_name('http://foo.bar', 'mockapp')
         assert ret == 'mockapp'

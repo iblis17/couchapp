@@ -3,6 +3,7 @@
 # This file is part of couchapp released under the Apache 2 license.
 # See the NOTICE for more information.
 
+import re
 import os
 
 from .client import Database
@@ -152,12 +153,12 @@ class Config(object):
         return [Database(dburl, use_proxy=use_proxy) for dburl in dburls]
 
     def get_app_name(self, dbstring=None, default=None):
+        dbstring = dbstring or ''
         env = self.conf.get('env', {})
-        if not dbstring.startswith("http://"):
-            if dbstring in env:
-                return env[dbstring].get('name', default)
-            elif 'default' in env:
-                return env['default'].get('name', default)
-        elif not dbstring and 'default' in env:
-                return env['default'].get('name', default)
+        is_full_uri = re.match('(https?|desktopcouch)://', dbstring)
+
+        if not is_full_uri and dbstring in env:
+            return env[dbstring].get('name', default)
+        elif not is_full_uri and 'default' in env:
+            return env['default'].get('name', default)
         return default
