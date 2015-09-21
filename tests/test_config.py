@@ -280,3 +280,40 @@ class TestConfig():
             assert self.config.get_dbs('https://bar') == ['mockdb']
 
         Database.assert_called_with('https://bar', use_proxy=True)
+
+    def test_get_app_name_default(self):
+        '''
+        Test case for Config.get_app_name() without args and env
+        '''
+        assert self.config.get_app_name() == None
+
+    def test_get_app_name_default_env(self):
+        '''
+        Test case for Config.get_app_name() without args but env
+
+        env: {
+            'default': {
+                'name': 'MockApp'
+            }
+        }
+        and
+        env: {
+            'mockname': {
+                'name': 'MockApp2'
+            }
+        }
+        '''
+        self.config.conf['env'] = {'default': {'name': 'MockApp'}}
+        assert self.config.get_app_name() == 'MockApp'
+
+        self.config.conf['env'] = {'mockname': {'name': 'MockApp2'}}
+        assert self.config.get_app_name('mockname') == 'MockApp2'
+
+    def test_get_app_name_http_uri(self):
+        '''
+        Test case for Config.get_app_name('http://foo.bar', default)
+
+        if the dbstring is full uri, return ``default``
+        '''
+        ret = self.config.get_app_name('http://foo.bar', 'mockapp')
+        assert ret == 'mockapp'
