@@ -29,14 +29,12 @@ def clone(source, dest=None, rev=None):
     """
     Clone an application from a design_doc given.
 
-    :attr design_doc: dict, the design doc retrieved from couchdb
-    if something was wrong.
+    :param source: the http/https uri of design document
     """
-
     try:
         dburl, docid = source.split('_design/')
     except ValueError:
-        raise AppError("%s isn't a valid source" % source)
+        raise AppError("{0} isn't a valid source".format(source))
 
     if not dest:
         dest = docid
