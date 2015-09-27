@@ -101,8 +101,11 @@ class Config(object):
         return (key in self.conf)
 
     def __iter__(self):
-        for k in list(self.conf.keys()):
-            yield self[k]
+        '''
+        We will get the key-value pair from the dict: self.conf
+        '''
+        for k, v in self.conf.items():
+            yield (k, v)
 
     @property
     def extensions(self):

@@ -320,3 +320,13 @@ class TestConfig():
         '''
         ret = self.config.get_app_name('http://foo.bar', 'mockapp')
         assert ret == 'mockapp'
+
+    def test_iter(self):
+        '''
+        Test case for Config.__iter__()
+        '''
+        self.config.conf['env'] = {'mock': True}
+        ls = list(self.config)
+
+        assert ('env', {'mock': True}) in ls, ls
+        assert ('hooks', {}) in ls, ls
