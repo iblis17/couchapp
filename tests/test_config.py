@@ -330,3 +330,22 @@ class TestConfig():
 
         assert ('env', {'mock': True}) in ls, ls
         assert ('hooks', {}) in ls, ls
+
+    def test_get(self):
+        '''
+        Test case for Config.get('__init__')
+        '''
+        assert callable(self.config.get('__init__'))
+
+    def test_get_default(self):
+        '''
+        Test case for Config.get('strang', 'default')
+        '''
+        assert self.config.get('strang', 'default') == 'default'
+
+    def test_get_conf(self):
+        '''
+        Test case for Config.get('env') returning value from self.conf
+        '''
+        self.config.conf['env'] = {'mock': True}
+        assert self.config.get('env') == {'mock': True}
