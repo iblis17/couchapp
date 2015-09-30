@@ -17,14 +17,6 @@ from couchapp.errors import AppError
 logger = logging.getLogger(__name__)
 
 
-if os.name == 'nt':
-    def _replace_slash(name):
-        return name.replace("/", "\\")
-else:
-    def _replace_slash(name):
-        return name
-
-
 def clone(source, dest=None, rev=None):
     """
     Clone an application from a design_doc given.
@@ -203,7 +195,7 @@ def clone(source, dest=None, rev=None):
                 filepath = os.path.join(vendor_attachdir, *attach_parts)
             else:
                 filepath = os.path.join(attachdir, filename)
-            filepath = _replace_slash(filepath)
+            filepath = os.path.normpath(filepath)
             currentdir = os.path.dirname(filepath)
             if not os.path.isdir(currentdir):
                 os.makedirs(currentdir)
