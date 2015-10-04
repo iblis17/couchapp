@@ -116,7 +116,7 @@ def clone(source, dest=None, rev=None):
     for key in doc.iterkeys():
         if key.startswith('_'):
             continue
-        elif key in ('couchapp'):
+        elif key in ('couchapp',):
             app_meta = copy.deepcopy(doc['couchapp'])
             if 'signatures' in app_meta:
                 del app_meta['signatures']
@@ -129,7 +129,7 @@ def clone(source, dest=None, rev=None):
             if app_meta:
                 couchapp_file = os.path.join(path, 'couchapp.json')
                 util.write_json(couchapp_file, app_meta)
-        elif key in ('views'):
+        elif key in ('views',):
             vs_dir = os.path.join(path, key)
             if not os.path.isdir(vs_dir):
                 os.makedirs(vs_dir)
