@@ -165,7 +165,7 @@ def clone(source, dest=None, rev=None):
                         fieldpath = os.path.join(filedir, field)
                         if isinstance(value, basestring):
                             if value.startswith('base64-encoded;'):
-                                value = base64.b64decode(content[15:])
+                                value = base64.b64decode(value[15:])
                             util.write(fieldpath, value)
                         else:
                             util.write_json(fieldpath + '.json', value)
