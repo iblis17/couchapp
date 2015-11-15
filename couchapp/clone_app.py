@@ -38,30 +38,22 @@ class clone(object):
             self.dest = self.docid
 
         # init self.path
-        self._init_path()
+        self.init_path()
 
         # init self.db
         self.db = client.Database(self.dburl[:-1], create=False)
         if not self.rev:
-            doc = self.db.open_doc("_design/%s" % self.docid)
+            self.doc = self.db.open_doc('_design/{0}'.format(self.docid))
         else:
-            doc = self.db.open_doc("_design/%s" % self.docid, rev=self.rev)
-        self.docid = doc['_id']
+            self.doc = self.db.open_doc('_design/{0}'.format(self.docid), rev=self.rev)
+        self.docid = self.doc['_id']
 
-        metadata = doc.get('couchapp', {})
-
-        # get manifest
-        manifest = metadata.get('manifest', {})
-
-        # get signatures
-        signatures = metadata.get('signatures', {})
-
-        # get objects refs
-        objects = metadata.get('objects', {})
+        # init metadata
+        self.init_metadata()
 
         # create files from manifest
-        if manifest:
-            for filename in manifest:
+        if self.manifest:
+            for filename in self.manifest:
                 logger.debug("clone property: %s" % filename)
                 filepath = os.path.join(self.path, filename)
                 if filename.endswith('/'):
@@ -72,7 +64,7 @@ class clone(object):
                 else:
                     parts = util.split_path(filename)
                     fname = parts.pop()
-                    v = doc
+                    v = self.doc
                     while 1:
                         try:
                             for key in parts:
@@ -90,8 +82,8 @@ class clone(object):
 
                         if isinstance(content, basestring):
                             _ref = md5(util.to_bytestring(content)).hexdigest()
-                            if objects and _ref in objects:
-                                content = objects[_ref]
+                            if self.objects and _ref in self.objects:
+                                content = self.objects[_ref]
 
                             if content.startswith('base64-encoded;'):
                                 content = base64.b64decode(content[15:])
@@ -109,7 +101,7 @@ class clone(object):
                         util.write(filepath, content)
 
                         # remove the key from design doc
-                        temp = doc
+                        temp = self.doc
                         for key2 in parts:
                             if key2 == key:
                                 if not temp[key2]:
@@ -119,11 +111,11 @@ class clone(object):
 
         # second pass for missing key or in case
         # manifest isn't in app
-        for key in doc.iterkeys():
+        for key in self.doc.iterkeys():
             if key.startswith('_'):
                 continue
             elif key in ('couchapp'):
-                app_meta = copy.deepcopy(doc['couchapp'])
+                app_meta = copy.deepcopy(self.doc['couchapp'])
                 if 'signatures' in app_meta:
                     del app_meta['signatures']
                 if 'manifest' in app_meta:
@@ -139,7 +131,7 @@ class clone(object):
                 vs_dir = os.path.join(self.path, key)
                 if not os.path.isdir(vs_dir):
                     os.makedirs(vs_dir)
-                for vsname, vs_item in doc[key].iteritems():
+                for vsname, vs_item in self.doc[key].iteritems():
                     vs_item_dir = os.path.join(vs_dir, vsname)
                     if not os.path.isdir(vs_item_dir):
                         os.makedirs(vs_item_dir)
@@ -151,7 +143,7 @@ class clone(object):
                 showpath = os.path.join(self.path, key)
                 if not os.path.isdir(showpath):
                     os.makedirs(showpath)
-                for func_name, func in doc[key].iteritems():
+                for func_name, func in self.doc[key].iteritems():
                     filename = os.path.join(showpath, '%s.js' % func_name)
                     util.write(filename, func)
                     logger.warning(
@@ -162,12 +154,12 @@ class clone(object):
                     continue
                 else:
                     logger.warning("clone property not in manifest: %s" % key)
-                    if isinstance(doc[key], (list, tuple,)):
-                        util.write_json(filedir + ".json", doc[key])
-                    elif isinstance(doc[key], dict):
+                    if isinstance(self.doc[key], (list, tuple,)):
+                        util.write_json(filedir + ".json", self.doc[key])
+                    elif isinstance(self.doc[key], dict):
                         if not os.path.isdir(filedir):
                             os.makedirs(filedir)
-                        for field, value in doc[key].iteritems():
+                        for field, value in self.doc[key].iteritems():
                             fieldpath = os.path.join(filedir, field)
                             if isinstance(value, basestring):
                                 if value.startswith('base64-encoded;'):
@@ -176,23 +168,23 @@ class clone(object):
                             else:
                                 util.write_json(fieldpath + '.json', value)
                     else:
-                        value = doc[key]
+                        value = self.doc[key]
                         if not isinstance(value, basestring):
                             value = str(value)
                         util.write(filedir, value)
 
         # save id
         idfile = os.path.join(self.path, '_id')
-        util.write(idfile, doc['_id'])
+        util.write(idfile, self.doc['_id'])
 
         util.write_json(os.path.join(self.path, '.couchapprc'), {})
 
-        if '_attachments' in doc:  # process attachments
+        if '_attachments' in self.doc:  # process attachments
             attachdir = os.path.join(self.path, '_attachments')
             if not os.path.isdir(attachdir):
                 os.makedirs(attachdir)
 
-            for filename in doc['_attachments'].iterkeys():
+            for filename in self.doc['_attachments'].iterkeys():
                 if filename.startswith('vendor'):
                     attach_parts = util.split_path(filename)
                     vendor_attachdir = os.path.join(self.path, attach_parts.pop(0),
@@ -206,7 +198,7 @@ class clone(object):
                 if not os.path.isdir(currentdir):
                     os.makedirs(currentdir)
 
-                if signatures.get(filename) != util.sign(filepath):
+                if self.signatures.get(filename) != util.sign(filepath):
                     resp = self.db.fetch_attachment(self.docid, filename)
                     with open(filepath, 'wb') as f:
                         for chunk in resp.body_stream():
@@ -223,8 +215,21 @@ class clone(object):
 
         return None
 
-    def _init_path(self):
+    def init_path(self):
         self.path = os.path.normpath(os.path.join(os.getcwd(), self.dest))
 
         if not os.path.exists(self.path):
             os.makedirs(self.path)
+
+    def init_metadata(self):
+        '''
+        Setup
+            - self.manifest
+            - self.signatures
+            - self.objects: objects refs
+        '''
+        metadata = self.doc.get('couchapp', {})
+
+        self.manifest = metadata.get('manifest', {})
+        self.signatures = metadata.get('signatures', {})
+        self.objects = metadata.get('objects', {})
