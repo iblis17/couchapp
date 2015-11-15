@@ -24,24 +24,29 @@ class clone(object):
     :param source: the http/https uri of design document
     """
     def __init__(self, source, dest=None, rev=None):
+        self.source = source
+        self.dest = dest
+        self.rev = rev
+
+        # init self.docid & self.dburl
         try:
-            dburl, docid = source.split('_design/')
+            self.dburl, self.docid = self.source.split('_design/')
         except ValueError:
-            raise AppError("{0} isn't a valid source".format(source))
+            raise AppError("{0} isn't a valid source".format(self.source))
 
-        if not dest:
-            dest = docid
+        if not self.dest:
+            self.dest = self.docid
 
-        path = os.path.normpath(os.path.join(os.getcwd(), dest))
-        if not os.path.exists(path):
-            os.makedirs(path)
+        # init self.path
+        self._init_path()
 
-        db = client.Database(dburl[:-1], create=False)
-        if not rev:
-            doc = db.open_doc("_design/%s" % docid)
+        # init self.db
+        self.db = client.Database(self.dburl[:-1], create=False)
+        if not self.rev:
+            doc = self.db.open_doc("_design/%s" % self.docid)
         else:
-            doc = db.open_doc("_design/%s" % docid, rev=rev)
-        docid = doc['_id']
+            doc = self.db.open_doc("_design/%s" % self.docid, rev=self.rev)
+        self.docid = doc['_id']
 
         metadata = doc.get('couchapp', {})
 
@@ -58,7 +63,7 @@ class clone(object):
         if manifest:
             for filename in manifest:
                 logger.debug("clone property: %s" % filename)
-                filepath = os.path.join(path, filename)
+                filepath = os.path.join(self.path, filename)
                 if filename.endswith('/'):
                     if not os.path.isdir(filepath):
                         os.makedirs(filepath)
@@ -128,10 +133,10 @@ class clone(object):
                 if 'length' in app_meta:
                     del app_meta['length']
                 if app_meta:
-                    couchapp_file = os.path.join(path, 'couchapp.json')
+                    couchapp_file = os.path.join(self.path, 'couchapp.json')
                     util.write_json(couchapp_file, app_meta)
             elif key in ('views'):
-                vs_dir = os.path.join(path, key)
+                vs_dir = os.path.join(self.path, key)
                 if not os.path.isdir(vs_dir):
                     os.makedirs(vs_dir)
                 for vsname, vs_item in doc[key].iteritems():
@@ -143,7 +148,7 @@ class clone(object):
                         util.write(filename, func)
                         logger.warning("clone view not in manifest: %s" % filename)
             elif key in ('shows', 'lists', 'filter', 'updates'):
-                showpath = os.path.join(path, key)
+                showpath = os.path.join(self.path, key)
                 if not os.path.isdir(showpath):
                     os.makedirs(showpath)
                 for func_name, func in doc[key].iteritems():
@@ -152,7 +157,7 @@ class clone(object):
                     logger.warning(
                         "clone show or list not in manifest: %s" % filename)
             else:
-                filedir = os.path.join(path, key)
+                filedir = os.path.join(self.path, key)
                 if os.path.exists(filedir):
                     continue
                 else:
@@ -177,20 +182,20 @@ class clone(object):
                         util.write(filedir, value)
 
         # save id
-        idfile = os.path.join(path, '_id')
+        idfile = os.path.join(self.path, '_id')
         util.write(idfile, doc['_id'])
 
-        util.write_json(os.path.join(path, '.couchapprc'), {})
+        util.write_json(os.path.join(self.path, '.couchapprc'), {})
 
         if '_attachments' in doc:  # process attachments
-            attachdir = os.path.join(path, '_attachments')
+            attachdir = os.path.join(self.path, '_attachments')
             if not os.path.isdir(attachdir):
                 os.makedirs(attachdir)
 
             for filename in doc['_attachments'].iterkeys():
                 if filename.startswith('vendor'):
                     attach_parts = util.split_path(filename)
-                    vendor_attachdir = os.path.join(path, attach_parts.pop(0),
+                    vendor_attachdir = os.path.join(self.path, attach_parts.pop(0),
                                                     attach_parts.pop(0),
                                                     '_attachments')
                     filepath = os.path.join(vendor_attachdir, *attach_parts)
@@ -202,18 +207,24 @@ class clone(object):
                     os.makedirs(currentdir)
 
                 if signatures.get(filename) != util.sign(filepath):
-                    resp = db.fetch_attachment(docid, filename)
+                    resp = self.db.fetch_attachment(self.docid, filename)
                     with open(filepath, 'wb') as f:
                         for chunk in resp.body_stream():
                             f.write(chunk)
                     logger.debug("clone attachment: %s" % filename)
 
-        logger.info("%s cloned in %s" % (source, dest))
+        logger.info("%s cloned in %s" % (self.source, self.dest))
 
     def __new__(cls, *args, **kwargs):
         obj = super(clone, cls).__new__(cls)
 
-        logger.debug('clone obj created: {}'.format(obj))
+        logger.debug('clone obj created: {0}'.format(obj))
         obj.__init__(*args, **kwargs)
 
         return None
+
+    def _init_path(self):
+        self.path = os.path.normpath(os.path.join(os.getcwd(), self.dest))
+
+        if not os.path.exists(self.path):
+            os.makedirs(self.path)
