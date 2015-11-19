@@ -52,62 +52,7 @@ class clone(object):
         self.init_metadata()
 
         # create files from manifest
-        if self.manifest:
-            for filename in self.manifest:
-                logger.debug("clone property: %s" % filename)
-                filepath = os.path.join(self.path, filename)
-                if filename.endswith('/'):
-                    if not os.path.isdir(filepath):
-                        os.makedirs(filepath)
-                elif filename == "couchapp.json":
-                    continue
-                else:
-                    parts = util.split_path(filename)
-                    fname = parts.pop()
-                    v = self.doc
-                    while 1:
-                        try:
-                            for key in parts:
-                                v = v[key]
-                        except KeyError:
-                            break
-                        # remove extension
-                        last_key, ext = os.path.splitext(fname)
-
-                        # make sure key exist
-                        try:
-                            content = v[last_key]
-                        except KeyError:
-                            break
-
-                        if isinstance(content, basestring):
-                            _ref = md5(util.to_bytestring(content)).hexdigest()
-                            if self.objects and _ref in self.objects:
-                                content = self.objects[_ref]
-
-                            if content.startswith('base64-encoded;'):
-                                content = base64.b64decode(content[15:])
-
-                        if fname.endswith('.json'):
-                            content = util.json.dumps(content).encode('utf-8')
-
-                        del v[last_key]
-
-                        # make sure file dir have been created
-                        filedir = os.path.dirname(filepath)
-                        if not os.path.isdir(filedir):
-                            os.makedirs(filedir)
-
-                        util.write(filepath, content)
-
-                        # remove the key from design doc
-                        temp = self.doc
-                        for key2 in parts:
-                            if key2 == key:
-                                if not temp[key2]:
-                                    del temp[key2]
-                                break
-                            temp = temp[key2]
+        self.setup_manifest()
 
         # second pass for missing key or in case
         # manifest isn't in app
@@ -233,3 +178,79 @@ class clone(object):
         self.manifest = metadata.get('manifest', {})
         self.signatures = metadata.get('signatures', {})
         self.objects = metadata.get('objects', {})
+
+    def setup_manifest(self):
+        '''
+        create files/dirs from manifest
+
+        manifest has following format in json:
+        ```
+            "manifest": [
+                "some_dir/",
+                "file_foo",
+                "bar.json"
+            ]
+        ```
+        '''
+        if not self.manifest:
+            return
+
+        for filename in self.manifest:
+            logger.debug('clone property: "{0}"'.format(filename))
+
+            filepath = os.path.join(self.path, filename)
+            if filename.endswith('/'):  # create dir
+                if not os.path.isdir(filepath):
+                    os.makedirs(filepath)
+                continue
+            elif filename == 'couchapp.json':  # we will handle it later
+                continue
+
+            # create file
+            parts = util.split_path(filename)
+            fname = parts.pop()
+            v = self.doc
+            while 1:
+                try:
+                    for key in parts:
+                        v = v[key]
+                except KeyError:
+                    break
+
+                # remove extension
+                last_key, ext = os.path.splitext(fname)
+
+                # make sure key exist
+                try:
+                    content = v[last_key]
+                except KeyError:
+                    break
+
+                if isinstance(content, basestring):
+                    _ref = md5(util.to_bytestring(content)).hexdigest()
+                    if self.objects and _ref in self.objects:
+                        content = self.objects[_ref]
+
+                    if content.startswith('base64-encoded;'):
+                        content = base64.b64decode(content[15:])
+
+                if fname.endswith('.json'):
+                    content = util.json.dumps(content).encode('utf-8')
+
+                del v[last_key]
+
+                # make sure file dir have been created
+                filedir = os.path.dirname(filepath)
+                if not os.path.isdir(filedir):
+                    os.makedirs(filedir)
+
+                util.write(filepath, content)
+
+                # remove the key from design doc
+                temp = self.doc
+                for key2 in parts:
+                    if key2 == key:
+                        if not temp[key2]:
+                            del temp[key2]
+                        break
+                    temp = temp[key2]
