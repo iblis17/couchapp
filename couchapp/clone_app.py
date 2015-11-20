@@ -23,6 +23,7 @@ class clone(object):
 
     :param source: the http/https uri of design document
     """
+
     def __init__(self, source, dest=None, rev=None):
         self.source = source
         self.dest = dest
@@ -56,67 +57,7 @@ class clone(object):
 
         # second pass for missing key or in case
         # manifest isn't in app
-        for key in self.doc.iterkeys():
-            if key.startswith('_'):
-                continue
-            elif key in ('couchapp'):
-                app_meta = copy.deepcopy(self.doc['couchapp'])
-                if 'signatures' in app_meta:
-                    del app_meta['signatures']
-                if 'manifest' in app_meta:
-                    del app_meta['manifest']
-                if 'objects' in app_meta:
-                    del app_meta['objects']
-                if 'length' in app_meta:
-                    del app_meta['length']
-                if app_meta:
-                    couchapp_file = os.path.join(self.path, 'couchapp.json')
-                    util.write_json(couchapp_file, app_meta)
-            elif key in ('views'):
-                vs_dir = os.path.join(self.path, key)
-                if not os.path.isdir(vs_dir):
-                    os.makedirs(vs_dir)
-                for vsname, vs_item in self.doc[key].iteritems():
-                    vs_item_dir = os.path.join(vs_dir, vsname)
-                    if not os.path.isdir(vs_item_dir):
-                        os.makedirs(vs_item_dir)
-                    for func_name, func in vs_item.iteritems():
-                        filename = os.path.join(vs_item_dir, '%s.js' % func_name)
-                        util.write(filename, func)
-                        logger.warning("clone view not in manifest: %s" % filename)
-            elif key in ('shows', 'lists', 'filter', 'updates'):
-                showpath = os.path.join(self.path, key)
-                if not os.path.isdir(showpath):
-                    os.makedirs(showpath)
-                for func_name, func in self.doc[key].iteritems():
-                    filename = os.path.join(showpath, '%s.js' % func_name)
-                    util.write(filename, func)
-                    logger.warning(
-                        "clone show or list not in manifest: %s" % filename)
-            else:
-                filedir = os.path.join(self.path, key)
-                if os.path.exists(filedir):
-                    continue
-                else:
-                    logger.warning("clone property not in manifest: %s" % key)
-                    if isinstance(self.doc[key], (list, tuple,)):
-                        util.write_json(filedir + ".json", self.doc[key])
-                    elif isinstance(self.doc[key], dict):
-                        if not os.path.isdir(filedir):
-                            os.makedirs(filedir)
-                        for field, value in self.doc[key].iteritems():
-                            fieldpath = os.path.join(filedir, field)
-                            if isinstance(value, basestring):
-                                if value.startswith('base64-encoded;'):
-                                    value = base64.b64decode(content[15:])
-                                util.write(fieldpath, value)
-                            else:
-                                util.write_json(fieldpath + '.json', value)
-                    else:
-                        value = self.doc[key]
-                        if not isinstance(value, basestring):
-                            value = str(value)
-                        util.write(filedir, value)
+        self.setup_missing()
 
         # save id
         idfile = os.path.join(self.path, '_id')
@@ -254,3 +195,72 @@ class clone(object):
                             del temp[key2]
                         break
                     temp = temp[key2]
+
+    def setup_missing(self):
+        '''
+        second pass for missing key or in case manifest isn't in app.
+        '''
+        for key in self.doc.iterkeys():
+            if key.startswith('_'):
+                continue
+            elif key in ('couchapp'):
+                app_meta = copy.deepcopy(self.doc['couchapp'])
+                if 'signatures' in app_meta:
+                    del app_meta['signatures']
+                if 'manifest' in app_meta:
+                    del app_meta['manifest']
+                if 'objects' in app_meta:
+                    del app_meta['objects']
+                if 'length' in app_meta:
+                    del app_meta['length']
+                if app_meta:
+                    couchapp_file = os.path.join(self.path, 'couchapp.json')
+                    util.write_json(couchapp_file, app_meta)
+            elif key in ('views'):
+                vs_dir = os.path.join(self.path, key)
+                if not os.path.isdir(vs_dir):
+                    os.makedirs(vs_dir)
+                for vsname, vs_item in self.doc[key].iteritems():
+                    vs_item_dir = os.path.join(vs_dir, vsname)
+                    if not os.path.isdir(vs_item_dir):
+                        os.makedirs(vs_item_dir)
+                    for func_name, func in vs_item.iteritems():
+                        filename = os.path.join(vs_item_dir,
+                                                '{0}.js'.format(func_name))
+                        util.write(filename, func)
+                        logger.warning(
+                            'clone view not in manifest: "{0}"'.format(filename))
+            elif key in ('shows', 'lists', 'filter', 'updates'):
+                showpath = os.path.join(self.path, key)
+                if not os.path.isdir(showpath):
+                    os.makedirs(showpath)
+                for func_name, func in self.doc[key].iteritems():
+                    filename = os.path.join(showpath,
+                                            '{0}.js'.format(func_name))
+                    util.write(filename, func)
+                    logger.warning(
+                        'clone show or list not in manifest: {0}'.format(filename))
+            else:  # handle other property
+                filedir = os.path.join(self.path, key)
+                if os.path.exists(filedir):
+                    continue
+
+                logger.warning("clone property not in manifest: {0}".format(key))
+                if isinstance(self.doc[key], (list, tuple,)):
+                    util.write_json('{0}.json'.format(filedir), self.doc[key])
+                elif isinstance(self.doc[key], dict):
+                    if not os.path.isdir(filedir):
+                        os.makedirs(filedir)
+                    for field, value in self.doc[key].iteritems():
+                        fieldpath = os.path.join(filedir, field)
+                        if isinstance(value, basestring):
+                            if value.startswith('base64-encoded;'):
+                                value = base64.b64decode(content[15:])
+                            util.write(fieldpath, value)
+                        else:
+                            util.write_json(fieldpath + '.json', value)
+                else:
+                    value = self.doc[key]
+                    if not isinstance(value, basestring):
+                        value = str(value)
+                    util.write(filedir, value)
