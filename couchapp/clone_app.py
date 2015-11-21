@@ -206,19 +206,7 @@ class clone(object):
             elif key in ('couchapp'):
                 self.setup_couchapp_json()
             elif key in ('views'):
-                vs_dir = os.path.join(self.path, key)
-                if not os.path.isdir(vs_dir):
-                    os.makedirs(vs_dir)
-                for vsname, vs_item in self.doc[key].iteritems():
-                    vs_item_dir = os.path.join(vs_dir, vsname)
-                    if not os.path.isdir(vs_item_dir):
-                        os.makedirs(vs_item_dir)
-                    for func_name, func in vs_item.iteritems():
-                        filename = os.path.join(vs_item_dir,
-                                                '{0}.js'.format(func_name))
-                        util.write(filename, func)
-                        logger.warning(
-                            'clone view not in manifest: "{0}"'.format(filename))
+                self.setup_views()
             elif key in ('shows', 'lists', 'filter', 'updates'):
                 showpath = os.path.join(self.path, key)
                 if not os.path.isdir(showpath):
@@ -278,3 +266,33 @@ class clone(object):
         if app_meta:
             couchapp_file = os.path.join(self.path, 'couchapp.json')
             util.write_json(couchapp_file, app_meta)
+
+    def setup_views(self):
+        '''
+        Create ``views/``
+
+        ``views`` dir will have following structure:
+        ```
+        views/
+            view_name/
+                map.js
+                reduce.js (optional)
+            view_name2/
+                ...
+        ```
+        '''
+        vs_dir = os.path.join(self.path, 'views')
+
+        if not os.path.isdir(vs_dir):
+            os.makedirs(vs_dir)
+
+        for vsname, vs_item in self.doc['views'].iteritems():
+            vs_item_dir = os.path.join(vs_dir, vsname)
+            if not os.path.isdir(vs_item_dir):
+                os.makedirs(vs_item_dir)
+            for func_name, func in vs_item.iteritems():
+                filename = os.path.join(vs_item_dir,
+                                        '{0}.js'.format(func_name))
+                util.write(filename, func)
+                logger.warning(
+                    'clone view not in manifest: "{0}"'.format(filename))
