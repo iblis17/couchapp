@@ -204,18 +204,7 @@ class clone(object):
             if key.startswith('_'):
                 continue
             elif key in ('couchapp'):
-                app_meta = copy.deepcopy(self.doc['couchapp'])
-                if 'signatures' in app_meta:
-                    del app_meta['signatures']
-                if 'manifest' in app_meta:
-                    del app_meta['manifest']
-                if 'objects' in app_meta:
-                    del app_meta['objects']
-                if 'length' in app_meta:
-                    del app_meta['length']
-                if app_meta:
-                    couchapp_file = os.path.join(self.path, 'couchapp.json')
-                    util.write_json(couchapp_file, app_meta)
+                self.setup_couchapp_json()
             elif key in ('views'):
                 vs_dir = os.path.join(self.path, key)
                 if not os.path.isdir(vs_dir):
@@ -264,3 +253,28 @@ class clone(object):
                     if not isinstance(value, basestring):
                         value = str(value)
                     util.write(filedir, value)
+
+    def setup_couchapp_json(self):
+        '''
+        Create ``couchapp.json`` from ``self.doc['couchapp']``.
+
+        We will exclude the following properties:
+            - ``signatures``
+            - ``manifest``
+            - ``objects``
+            - ``length``
+        '''
+        app_meta = copy.deepcopy(self.doc['couchapp'])
+
+        if 'signatures' in app_meta:
+            del app_meta['signatures']
+        if 'manifest' in app_meta:
+            del app_meta['manifest']
+        if 'objects' in app_meta:
+            del app_meta['objects']
+        if 'length' in app_meta:
+            del app_meta['length']
+
+        if app_meta:
+            couchapp_file = os.path.join(self.path, 'couchapp.json')
+            util.write_json(couchapp_file, app_meta)
