@@ -187,30 +187,53 @@ class clone(object):
                 self.setup_views()
             elif key in ('shows', 'lists', 'filter', 'updates'):
                 self.setup_func(key)
-            else:  # handle other property
-                filedir = os.path.join(self.path, key)
-                if os.path.exists(filedir):
-                    continue
+            else:
+                self.setup_prop(key)
 
-                logger.warning("clone property not in manifest: {0}".format(key))
-                if isinstance(self.doc[key], (list, tuple,)):
-                    util.write_json('{0}.json'.format(filedir), self.doc[key])
-                elif isinstance(self.doc[key], dict):
-                    if not os.path.isdir(filedir):
-                        os.makedirs(filedir)
-                    for field, value in self.doc[key].iteritems():
-                        fieldpath = os.path.join(filedir, field)
-                        if isinstance(value, basestring):
-                            if value.startswith('base64-encoded;'):
-                                value = base64.b64decode(content[15:])
-                            util.write(fieldpath, value)
-                        else:
-                            util.write_json(fieldpath + '.json', value)
+    def setup_prop(self, prop):
+        '''
+        Create file for arbitrary property.
+
+        Policy:
+        - If the property is a list, we will save it as json file.
+
+        - If the property is a dict, we will create a dir for it and
+          handle its contents recursively.
+
+        - If the property starts with ``base64-encoded;``,
+          we decode it and save as binary file.
+
+        - If the property is simple plane text, we just save it.
+        '''
+        if prop not in self.doc:
+            return
+
+        filedir = os.path.join(self.path, prop)
+
+        if os.path.exists(filedir):
+            return
+
+        logger.warning('clone property not in manifest: {0}'.format(prop))
+
+        if isinstance(self.doc[prop], (list, tuple,)):
+            util.write_json('{0}.json'.format(filedir), self.doc[prop])
+        elif isinstance(self.doc[prop], dict):
+            if not os.path.isdir(filedir):
+                os.makedirs(filedir)
+
+            for field, value in self.doc[prop].iteritems():
+                fieldpath = os.path.join(filedir, field)
+                if isinstance(value, basestring):
+                    if value.startswith('base64-encoded;'):
+                        value = base64.b64decode(content[15:])
+                    util.write(fieldpath, value)
                 else:
-                    value = self.doc[key]
-                    if not isinstance(value, basestring):
-                        value = str(value)
-                    util.write(filedir, value)
+                    util.write_json(fieldpath + '.json', value)
+        else:
+            value = self.doc[prop]
+            if not isinstance(value, basestring):
+                value = str(value)
+            util.write(filedir, value)
 
     def setup_couchapp_json(self):
         '''
