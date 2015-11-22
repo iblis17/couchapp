@@ -60,8 +60,7 @@ class clone(object):
         self.setup_missing()
 
         # save id
-        idfile = os.path.join(self.path, '_id')
-        util.write(idfile, self.doc['_id'])
+        self.setup_id()
 
         util.write_json(os.path.join(self.path, '.couchapprc'), {})
 
@@ -308,3 +307,9 @@ class clone(object):
             logger.warning(
                 'clone function "{0}" not in manifest: {1}'.format(func,
                                                                    filename))
+    def setup_id(self):
+        '''
+        Create ``_id`` file
+        '''
+        idfile = os.path.join(self.path, '_id')
+        util.write(idfile, self.doc['_id'])
