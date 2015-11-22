@@ -62,35 +62,14 @@ class clone(object):
         # save id
         self.setup_id()
 
+        # setup empty .couchapprc
         util.write_json(os.path.join(self.path, '.couchapprc'), {})
 
-        if '_attachments' in self.doc:  # process attachments
-            attachdir = os.path.join(self.path, '_attachments')
-            if not os.path.isdir(attachdir):
-                os.makedirs(attachdir)
+        # process attachments
+        self.setup_attachments()
 
-            for filename in self.doc['_attachments'].iterkeys():
-                if filename.startswith('vendor'):
-                    attach_parts = util.split_path(filename)
-                    vendor_attachdir = os.path.join(self.path, attach_parts.pop(0),
-                                                    attach_parts.pop(0),
-                                                    '_attachments')
-                    filepath = os.path.join(vendor_attachdir, *attach_parts)
-                else:
-                    filepath = os.path.join(attachdir, filename)
-                filepath = os.path.normpath(filepath)
-                currentdir = os.path.dirname(filepath)
-                if not os.path.isdir(currentdir):
-                    os.makedirs(currentdir)
-
-                if self.signatures.get(filename) != util.sign(filepath):
-                    resp = self.db.fetch_attachment(self.docid, filename)
-                    with open(filepath, 'wb') as f:
-                        for chunk in resp.body_stream():
-                            f.write(chunk)
-                    logger.debug("clone attachment: %s" % filename)
-
-        logger.info("%s cloned in %s" % (self.source, self.dest))
+        logger.info("{src} cloned in {dest}".format(src=self.source,
+                                                    dest=self.dest))
 
     def __new__(cls, *args, **kwargs):
         obj = super(clone, cls).__new__(cls)
@@ -307,9 +286,44 @@ class clone(object):
             logger.warning(
                 'clone function "{0}" not in manifest: {1}'.format(func,
                                                                    filename))
+
     def setup_id(self):
         '''
         Create ``_id`` file
         '''
         idfile = os.path.join(self.path, '_id')
         util.write(idfile, self.doc['_id'])
+
+    def setup_attachments(self):
+        '''
+        Create ``_attachments`` dir
+        '''
+        if '_attachments' not in self.doc:
+            return
+
+        attachdir = os.path.join(self.path, '_attachments')
+
+        if not os.path.isdir(attachdir):
+            os.makedirs(attachdir)
+
+        for filename in self.doc['_attachments'].iterkeys():
+            if filename.startswith('vendor'):
+                attach_parts = util.split_path(filename)
+                vendor_attachdir = os.path.join(self.path, attach_parts.pop(0),
+                                                attach_parts.pop(0),
+                                                '_attachments')
+                filepath = os.path.join(vendor_attachdir, *attach_parts)
+            else:
+                filepath = os.path.join(attachdir, filename)
+
+            filepath = os.path.normpath(filepath)
+            currentdir = os.path.dirname(filepath)
+            if not os.path.isdir(currentdir):
+                os.makedirs(currentdir)
+
+            if self.signatures.get(filename) != util.sign(filepath):
+                resp = self.db.fetch_attachment(self.docid, filename)
+                with open(filepath, 'wb') as f:
+                    for chunk in resp.body_stream():
+                        f.write(chunk)
+                logger.debug('clone attachment: {0}'.format(filename))
