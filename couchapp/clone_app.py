@@ -208,15 +208,7 @@ class clone(object):
             elif key in ('views'):
                 self.setup_views()
             elif key in ('shows', 'lists', 'filter', 'updates'):
-                showpath = os.path.join(self.path, key)
-                if not os.path.isdir(showpath):
-                    os.makedirs(showpath)
-                for func_name, func in self.doc[key].iteritems():
-                    filename = os.path.join(showpath,
-                                            '{0}.js'.format(func_name))
-                    util.write(filename, func)
-                    logger.warning(
-                        'clone show or list not in manifest: {0}'.format(filename))
+                self.setup_func(key)
             else:  # handle other property
                 filedir = os.path.join(self.path, key)
                 if os.path.exists(filedir):
@@ -296,3 +288,23 @@ class clone(object):
                 util.write(filename, func)
                 logger.warning(
                     'clone view not in manifest: "{0}"'.format(filename))
+
+    def setup_func(self, func):
+        '''
+        Create dir for function:
+            - ``shows``
+            - ``lists
+            - ``filters``
+            - ``updates``
+        '''
+        showpath = os.path.join(self.path, func)
+
+        if not os.path.isdir(showpath):
+            os.makedirs(showpath)
+
+        for func_name, func in self.doc[func].iteritems():
+            filename = os.path.join(showpath, '{0}.js'.format(func_name))
+            util.write(filename, func)
+            logger.warning(
+                'clone function "{0}" not in manifest: {1}'.format(func,
+                                                                   filename))
