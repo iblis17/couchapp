@@ -350,3 +350,23 @@ class clone(object):
                     for chunk in resp.body_stream():
                         f.write(chunk)
                 logger.debug('clone attachment: {0}'.format(filename))
+
+    def setup_dir(self, path):
+        '''
+        Create dir recursively.
+
+        :return: True, if create success.
+                 Else, false.
+        '''
+        if not path:
+            return False
+        if os.path.exists(path):
+            logger.warning('file exists: "{0}"'.format(path))
+            return False
+
+        try:
+            os.makedirs(path)
+        except OSError as e:
+            logger.debug(e)
+            return False
+        return True
