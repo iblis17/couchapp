@@ -78,3 +78,37 @@ class TestCloneMethod():
         assert getcwd.called
         assert self.clone.path == '/tmp/mock'
         setup_dir.assert_called_with('/tmp/mock')
+
+    def test_init_metadata(self):
+        '''
+        Test case for extract metadata from a ddoc
+        '''
+        self.clone.doc = {
+            'couchapp': {
+                'manifest': ['views/'],
+                'signatures': {'mock': 'strange_value'},
+                'objects': {'obj_hash': 'obj'}
+            }
+        }
+
+        self.clone.init_metadata()
+
+        assert 'views/' in self.clone.manifest
+        assert 'mock' in self.clone.signatures
+        assert 'obj_hash' in self.clone.objects
+
+    def test_init_metadata_default(self):
+        '''
+        Test case for extract metadata from an empty ddoc
+
+        Check the default contain correct type
+        '''
+        self.clone.doc = {
+            'couchapp': {}
+        }
+
+        self.clone.init_metadata()
+
+        assert self.clone.manifest == []
+        assert self.clone.signatures == {}
+        assert self.clone.objects == {}

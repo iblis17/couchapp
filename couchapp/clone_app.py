@@ -93,7 +93,7 @@ class clone(object):
         '''
         metadata = self.doc.get('couchapp', {})
 
-        self.manifest = metadata.get('manifest', {})
+        self.manifest = metadata.get('manifest', [])
         self.signatures = metadata.get('signatures', {})
         self.objects = metadata.get('objects', {})
 
