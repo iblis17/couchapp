@@ -48,3 +48,33 @@ class TestCloneMethod():
         assert self.clone.setup_dir('') is False
         assert exists.called is False
         assert makedirs.called is False
+
+    @patch('couchapp.clone_app.os.getcwd', return_value='/mock')
+    @patch('couchapp.clone_app.clone.setup_dir')
+    def test_setup_path_cwd(self, setup_dir, getcwd):
+        '''
+        Test case for ``DEST`` not given
+
+        We will use the current working dir.
+        '''
+        self.clone.dest = None
+
+        self.clone.init_path()
+
+        assert getcwd.called
+        assert self.clone.path == '/mock'
+        setup_dir.assert_called_with('/mock')
+
+    @patch('couchapp.clone_app.os.getcwd', return_value='/tmp')
+    @patch('couchapp.clone_app.clone.setup_dir')
+    def test_setup_path_dest(self, setup_dir, getcwd):
+        '''
+        Test case for ``DEST`` given
+        '''
+        self.clone.dest = 'mock'
+
+        self.clone.init_path()
+
+        assert getcwd.called
+        assert self.clone.path == '/tmp/mock'
+        setup_dir.assert_called_with('/tmp/mock')

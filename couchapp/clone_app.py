@@ -80,10 +80,9 @@ class clone(object):
         return None
 
     def init_path(self):
-        self.path = os.path.normpath(os.path.join(os.getcwd(), self.dest))
-
-        if not os.path.exists(self.path):
-            os.makedirs(self.path)
+        self.path = os.path.normpath(os.path.join(os.getcwd(),
+                                                  self.dest or ''))
+        self.setup_dir(self.path)
 
     def init_metadata(self):
         '''
