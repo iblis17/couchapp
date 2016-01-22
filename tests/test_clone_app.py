@@ -307,3 +307,66 @@ class TestCloneMethod():
         '''
         self.clone.doc = {}
         assert self.clone.extract_property('mock') is None
+
+    @patch('couchapp.clone_app.clone.setup_dir')
+    @patch('couchapp.clone_app.util.write')
+    def test_dump_file_empty_args(self, util_write, setup_dir):
+        '''
+        Test case for dump_file with empty ``path``
+        '''
+        self.clone.objects = {}
+
+        assert self.clone.dump_file('', 'mock') is None
+        assert not util_write.called
+        assert not setup_dir.called
+
+    @patch('couchapp.clone_app.clone.setup_dir')
+    @patch('couchapp.clone_app.util.write')
+    def test_dump_file_json_str(self, util_write, setup_dir):
+        '''
+        Test case for dump_file to json file with normal str
+        '''
+        self.clone.objects = {}
+
+        ret = self.clone.dump_file('/mock/fake.json', 'foobar\n')
+
+        assert setup_dir.called
+        assert util_write.call_args_list[0][0] == ('/mock/fake.json',
+                                                   '"foobar\\n"')
+
+    def test_decode_content_str(self):
+        '''
+        Test case for decode_content with normal str
+        '''
+        self.clone.objects = {}
+
+        assert self.clone.decode_content('foobar\n') == 'foobar\n'
+
+    def test_decode_content_base64(self):
+        '''
+        Test case for decode_content with base64 str
+        '''
+        self.clone.objects = {}
+        b64_content = 'base64-encoded;Zm9vYmFyCg=='  # foobar\n
+
+        assert self.clone.decode_content(b64_content) == 'foobar\n'
+
+    def test_decode_content_objects(self):
+        '''
+        Test case for decode_content with content refered to ``objects``
+        '''
+        self.clone.objects = {
+            '17404a596cbd0d1e6c7d23fcd845ab82': 'mock_data'
+        }
+
+        assert self.clone.decode_content('mock') == 'mock_data'
+
+    def test_decode_content_non_str(self):
+        '''
+        Test case for decode_content with non-str
+        '''
+        assert self.clone.decode_content(42) == 42
+        assert self.clone.decode_content(1.1) == 1.1
+        assert self.clone.decode_content(['foo']) == ['foo']
+        assert self.clone.decode_content(None) is None
+        assert self.clone.decode_content(True) is True

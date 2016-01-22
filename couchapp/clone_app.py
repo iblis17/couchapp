@@ -127,33 +127,12 @@ class clone(object):
                 continue
 
             # create file
-            parts = util.split_path(filename)
-            fname = parts.pop()
-            v = self.doc
-
             item_pair = self.extract_property(filename)
-
             if item_pair is None:
                 continue
             _, content = item_pair
 
-            if isinstance(content, basestring):
-                _ref = md5(util.to_bytestring(content)).hexdigest()
-                if self.objects and _ref in self.objects:
-                    content = self.objects[_ref]
-
-                if content.startswith('base64-encoded;'):
-                    content = base64.b64decode(content[15:])
-
-            if fname.endswith('.json'):
-                content = util.json.dumps(content).encode('utf-8')
-
-            # make sure file dir have been created
-            filedir = os.path.dirname(filepath)
-            if not os.path.isdir(filedir):
-                os.makedirs(filedir)
-
-            util.write(filepath, content)
+            self.dump_file(filepath, self.decode_content(content))
 
     def extract_property(self, path):
         '''
@@ -174,7 +153,7 @@ class clone(object):
 
         :side effect: Remove key from ``self.doc`` if extract sucessfully.
 
-        :return: The ``(content,)`` pair. Note that
+        :return: The ``(path, content)`` pair. Note that
                  if we get path ``a`` and ``{'a': null}``,
                  then the return will be ``('a', None)``.
 
@@ -222,6 +201,39 @@ class clone(object):
             del doc[head]
 
         return ret
+
+    def decode_content(self, content):
+        '''
+        Decode for base64 string, or get the content refered via objects
+        '''
+        if not isinstance(content, basestring):
+            return content
+
+        _ref = md5(util.to_bytestring(content)).hexdigest()
+        if self.objects and _ref in self.objects:
+            content = self.objects[_ref]
+
+        if content.startswith('base64-encoded;'):
+            content = base64.b64decode(content[15:])
+
+        return content
+
+    def dump_file(self, path, content):
+        '''
+        Dump the content of doc to file
+        '''
+        if not path:
+            return
+
+        if path.endswith('.json'):
+            content = util.json.dumps(content).encode('utf-8')
+
+        # make sure file dir have been created
+        filedir = os.path.dirname(path)
+        if not os.path.isdir(filedir):
+            self.setup_dir(filedir)
+
+        util.write(path, content)
 
     def setup_missing(self):
         '''
