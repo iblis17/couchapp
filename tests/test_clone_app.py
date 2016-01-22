@@ -370,3 +370,88 @@ class TestCloneMethod():
         assert self.clone.decode_content(['foo']) == ['foo']
         assert self.clone.decode_content(None) is None
         assert self.clone.decode_content(True) is True
+
+    @patch('couchapp.clone_app.clone.dump_file')
+    def test_setup_manifest_empty(self, dump_file):
+        '''
+        Test case for setup_manifest with empty ``manifest``
+        '''
+        self.clone.manifest = []
+        self.clone.setup_manifest()
+        assert not dump_file.called
+
+    @patch('couchapp.clone_app.clone.decode_content')
+    @patch('couchapp.clone_app.clone.dump_file')
+    @patch('couchapp.clone_app.clone.extract_property')
+    @patch('couchapp.clone_app.clone.setup_dir')
+    def test_setup_manifest_dirs(self, setup_dir, extract_property,
+                                 dump_file, decode_content):
+        '''
+        Test case for setup_manifest with dirs
+        '''
+        self.clone.path = '/mock'
+        self.clone.manifest = ['views/', 'views/mockview/',
+                               'shows/', '_attachments/']
+
+        self.clone.setup_manifest()
+        assert setup_dir.call_count == 4
+        assert not extract_property.called
+        assert not decode_content.called
+        assert not dump_file.called
+
+    @patch('couchapp.clone_app.clone.decode_content')
+    @patch('couchapp.clone_app.clone.extract_property')
+    @patch('couchapp.clone_app.clone.dump_file')
+    @patch('couchapp.clone_app.clone.setup_dir')
+    def test_setup_manifest_couchapp_json(self, setup_dir, dump_file,
+                                          extract_property, decode_content):
+        '''
+        Test case for setup_manifest with ``couchapp.json``
+        '''
+        self.clone.path = '/mock'
+        self.clone.manifest = ['couchapp.json']
+
+        self.clone.setup_manifest()
+        assert not setup_dir.called
+        assert not extract_property.called
+        assert not decode_content.called
+        assert not dump_file.called
+
+    @patch('couchapp.clone_app.clone.decode_content')
+    @patch('couchapp.clone_app.clone.extract_property')
+    @patch('couchapp.clone_app.clone.dump_file')
+    @patch('couchapp.clone_app.clone.setup_dir')
+    def test_setup_manifest_create_files_fail(self, setup_dir, dump_file,
+                                              extract_property, decode_content):
+        '''
+        Test case for setup_manifest create files failed
+        '''
+        self.clone.path = '/mock'
+        self.clone.manifest = ['mock.json', 'fake.txt']
+        extract_property.return_value = None
+
+        self.clone.setup_manifest()
+        assert not setup_dir.called
+        assert extract_property.call_count == 2
+        assert not decode_content.called
+        assert not dump_file.called
+
+    @patch('couchapp.clone_app.clone.decode_content')
+    @patch('couchapp.clone_app.clone.extract_property')
+    @patch('couchapp.clone_app.clone.dump_file')
+    @patch('couchapp.clone_app.clone.setup_dir')
+    def test_setup_manifest_create_files(self, setup_dir, dump_file,
+                                         extract_property, decode_content):
+        '''
+        Test case for setup_manifest create files
+        '''
+
+        self.clone.path = '/mock'
+        self.clone.manifest = ['mock.json', 'fake.txt']
+        extract_property.return_value = ('mock', 'joke')
+
+        self.clone.setup_manifest()
+        assert not setup_dir.called
+        assert extract_property.call_count == 2
+        assert dump_file.called
+        assert decode_content.called
