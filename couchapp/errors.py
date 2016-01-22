@@ -58,3 +58,7 @@ class ScriptError(Exception):
 
 class InvalidAttachment(Exception):
     """ raised when attachment is invalid (bad size, ct, ..)"""
+
+
+class MissingContent(Exception):
+    """ raised when the clone_app extract content from property failed"""

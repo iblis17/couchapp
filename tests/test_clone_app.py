@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from couchapp.clone_app import clone
-from couchapp.errors import AppError
+from couchapp.errors import AppError, MissingContent
 
 from mock import patch
 from nose.tools import  raises
@@ -112,3 +112,198 @@ class TestCloneMethod():
         assert self.clone.manifest == []
         assert self.clone.signatures == {}
         assert self.clone.objects == {}
+
+    def test_pop_doc_str(self):
+        '''
+        Test case for pop str from ``clone.doc``
+        '''
+        path = ['mock.json']
+        doc = {
+            'mock': 'fake_data',
+            'other': None
+        }
+        ret = self.clone.pop_doc(path, doc)
+        assert ret == 'fake_data'
+        assert doc == {'other': None}
+
+    def test_pop_doc_unicode(self):
+        '''
+        Test case for pop unicode from ``clone.doc``
+        '''
+        path = ['mock.json']
+        doc = {
+            u'mock': u'fake_data'
+        }
+        ret = self.clone.pop_doc(path, doc)
+        assert ret == u'fake_data'
+        assert doc == {}
+
+        path = [u'mock.json']
+        doc = {
+            u'mock': u'fake_data'
+        }
+        ret = self.clone.pop_doc(path, doc)
+        assert ret == u'fake_data'
+        assert doc == {}
+
+        path = [u'mock.json']
+        doc = {
+            'mock': u'fake_data'
+        }
+        ret = self.clone.pop_doc(path, doc)
+        assert ret == u'fake_data'
+        assert doc == {}
+
+    def test_pop_doc_int(self):
+        '''
+        Test case for pop int from ``clone.doc``
+        '''
+        path = ['truth.json']
+        doc = {
+            'truth': 42
+        }
+        ret = self.clone.pop_doc(path, doc)
+        assert isinstance(ret, int)
+        assert ret == 42
+        assert doc == {}
+
+    def test_pop_doc_float(self):
+        '''
+        Test case for pop float from ``clone.doc``
+        '''
+        path = ['truth.json']
+        doc = {
+            'truth': 42.0
+        }
+        ret = self.clone.pop_doc(path, doc)
+        assert isinstance(ret, float)
+        assert ret == 42.0
+        assert doc == {}
+
+    def test_pop_doc_list(self):
+        '''
+        Test case for pop list from ``clone.doc``
+        '''
+        path = ['mock.json']
+        doc = {
+            'mock': ['foo', 'bar']
+        }
+        ret = self.clone.pop_doc(path, doc)
+        assert ret == ['foo', 'bar']
+        assert doc == {}
+
+    def test_pop_doc_none(self):
+        '''
+        Test case for pop ``None`` from ``clone.doc``
+
+        Note that the None come from ``null`` value in json.
+        '''
+        path = ['mock.json']
+        doc = {
+            'mock': None
+        }
+        ret = self.clone.pop_doc(path, doc)
+        assert ret is None
+        assert doc == {}
+
+    def test_pop_doc_bool(self):
+        '''
+        Test case for pop boolean from ``clone.doc``
+        '''
+        path = ['mock.json']
+        doc = {
+            'mock': True
+        }
+        ret = self.clone.pop_doc(path, doc)
+        assert ret is True
+        assert doc == {}
+
+    def test_pop_doc_deep(self):
+        '''
+        Test case for pop data from deeper prop of ``clone.doc``
+        '''
+        path = ['shows', 'mock.js']
+        doc = {
+            'shows': {
+                'mock': u'fake_script'
+            }
+        }
+        ret = self.clone.pop_doc(path, doc)
+        assert ret == u'fake_script'
+        assert doc == {}
+
+        path = ['shows.lol', 'mock.bak.js']
+        doc = {
+            'shows.lol': {
+                'mock.bak': u'fake_script'
+            }
+        }
+        ret = self.clone.pop_doc(path, doc)
+        assert ret == u'fake_script'
+        assert doc == {}
+
+    @raises(MissingContent)
+    def test_pop_doc_miss(self):
+        '''
+        Test case for pop a missing prop
+        '''
+        path = ['fake.json']
+        doc = {
+            'mock': 'mock_data'
+        }
+
+        self.clone.pop_doc(path, doc)
+        assert doc == {'mock': 'mock_data'}
+
+    @raises(MissingContent)
+    def test_pop_doc_wrong_prop(self):
+        '''
+        Test case for pop a wrong prop
+        '''
+        path = ['mock', 'fake.json']
+        doc = {
+            'mock': ['fake']
+        }
+
+        self.clone.pop_doc(path, doc)
+
+    @raises(MissingContent)
+    def test_pop_doc_empty_args(self):
+        '''
+        Test case for ``clone.pop_doc`` with empty args
+        '''
+        doc = {
+            'mock': 'fake'
+        }
+        self.clone.pop_doc([], doc)
+
+    def test_extract_property_empty_args(self):
+        '''
+        Test case for ``extract_property`` with empty args
+        '''
+        self.clone.doc = {
+            'mock': 'no_effect'
+        }
+
+        assert self.clone.extract_property('') is None
+        assert self.clone.doc == {'mock': 'no_effect'}
+
+    @patch('couchapp.clone_app.clone.pop_doc', return_value='mock_content')
+    def test_extract_property(self, pop_doc):
+        '''
+        Test case for extract prop successfully
+        '''
+        self.clone.doc = {}
+
+        ret = self.clone.extract_property('mock')
+
+        assert ret == ('mock', 'mock_content')
+        assert pop_doc.called
+
+    @patch('couchapp.clone_app.clone.pop_doc', side_effect=MissingContent)
+    def test_extract_property_fail(self, pop_doc):
+        '''
+        Test case for extract prop failed
+        '''
+        self.clone.doc = {}
+        assert self.clone.extract_property('mock') is None

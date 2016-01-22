@@ -11,7 +11,7 @@ import os
 from hashlib import md5
 
 from couchapp import client, util
-from couchapp.errors import AppError
+from couchapp.errors import AppError, MissingContent
 
 
 logger = logging.getLogger(__name__)
@@ -109,6 +109,9 @@ class clone(object):
                 "bar.json"
             ]
         ```
+
+        Once we create a file successfully, we will remove the record from
+        ``self.doc``.
         '''
         if not self.manifest:
             return
@@ -118,8 +121,7 @@ class clone(object):
 
             filepath = os.path.join(self.path, filename)
             if filename.endswith('/'):  # create dir
-                if not os.path.isdir(filepath):
-                    os.makedirs(filepath)
+                self.setup_dir(filepath)
                 continue
             elif filename == 'couchapp.json':  # we will handle it later
                 continue
@@ -128,50 +130,98 @@ class clone(object):
             parts = util.split_path(filename)
             fname = parts.pop()
             v = self.doc
-            while 1:
-                try:
-                    for key in parts:
-                        v = v[key]
-                except KeyError:
-                    break
 
-                # remove extension
-                last_key, ext = os.path.splitext(fname)
+            item_pair = self.extract_property(filename)
 
-                # make sure key exist
-                try:
-                    content = v[last_key]
-                except KeyError:
-                    break
+            if item_pair is None:
+                continue
+            _, content = item_pair
 
-                if isinstance(content, basestring):
-                    _ref = md5(util.to_bytestring(content)).hexdigest()
-                    if self.objects and _ref in self.objects:
-                        content = self.objects[_ref]
+            if isinstance(content, basestring):
+                _ref = md5(util.to_bytestring(content)).hexdigest()
+                if self.objects and _ref in self.objects:
+                    content = self.objects[_ref]
 
-                    if content.startswith('base64-encoded;'):
-                        content = base64.b64decode(content[15:])
+                if content.startswith('base64-encoded;'):
+                    content = base64.b64decode(content[15:])
 
-                if fname.endswith('.json'):
-                    content = util.json.dumps(content).encode('utf-8')
+            if fname.endswith('.json'):
+                content = util.json.dumps(content).encode('utf-8')
 
-                del v[last_key]
+            # make sure file dir have been created
+            filedir = os.path.dirname(filepath)
+            if not os.path.isdir(filedir):
+                os.makedirs(filedir)
 
-                # make sure file dir have been created
-                filedir = os.path.dirname(filepath)
-                if not os.path.isdir(filedir):
-                    os.makedirs(filedir)
+            util.write(filepath, content)
 
-                util.write(filepath, content)
+    def extract_property(self, path):
+        '''
+        Extract the content from ``self.doc``.
+        Given a listed path in ``self.manifest``, we travel the ``self.doc``.
 
-                # remove the key from design doc
-                temp = self.doc
-                for key2 in parts:
-                    if key2 == key:
-                        if not temp[key2]:
-                            del temp[key2]
-                        break
-                    temp = temp[key2]
+        Assume we have ``views/some_func/map.js`` in our ``self.manifest``
+        Then, there should exist following struct in ``self.doc``
+        {
+            ...
+            "views": {
+                "some_func": {
+                    "map": "..."
+                }
+            }
+            ...
+        }
+
+        :side effect: Remove key from ``self.doc`` if extract sucessfully.
+
+        :return: The ``(content,)`` pair. Note that
+                 if we get path ``a`` and ``{'a': null}``,
+                 then the return will be ``('a', None)``.
+
+                 If the extraction failed, return ``None``
+        '''
+        if not path:
+            return None
+
+        try:
+            content = self.pop_doc(util.split_path(path), self.doc)
+        except MissingContent:
+            logger.warning(
+                'file {0} listed in mastfest missed content'.format(path))
+            return None
+        return (path, content)
+
+    def pop_doc(self, path, doc):
+        '''
+        do doc recursive traversal, and pop the value
+
+        :param path: the list from ``util.split_path``
+        :side effect: Remove key from ``self.doc`` if extract sucessfully.
+        :return: the value. If we pop failed,
+                 raise ``couchapp.errors.MissingContent``.
+        '''
+        try:
+            head, tail = path[0], path[1:]
+        except IndexError:  # path is empty
+            raise MissingContent()
+
+        if not tail:  # the leaf node of path
+            prop, _ = os.path.splitext(head)
+            if prop in doc:
+                return doc.pop(prop)
+            else:
+                raise MissingContent()
+
+        subdoc = doc.get(head, None)
+        if not isinstance(subdoc, dict):
+            raise MissingContent()
+
+        ret = self.pop_doc(tail, subdoc)
+
+        if not subdoc:  # after subdoc.pop(), if the subdoc is empty
+            del doc[head]
+
+        return ret
 
     def setup_missing(self):
         '''
