@@ -278,7 +278,7 @@ class clone(object):
         if os.path.exists(filepath):
             return
 
-        logger.warning('clone property not in manifest: {0}'.format(prop))
+        logger.warning('clone property not in manifest: "{0}"'.format(prop))
 
         value = self.doc[prop]
         if isinstance(value, (list, tuple, int, float, bool)) or value is None:
@@ -287,15 +287,15 @@ class clone(object):
             if not os.path.isdir(filepath):
                 self.setup_dir(filepath)
 
-            for field, value in self.doc[prop].iteritems():
+            for field, content in value.iteritems():
                 fieldpath = os.path.join(filepath, field)
-                if isinstance(value, basestring):
-                    if value.startswith('base64-encoded;'):
-                        value = base64.b64decode(content[15:])
-                    util.write(fieldpath, value)
-                else:
-                    util.write_json(fieldpath + '.json', value)
-        else:  # in case of ``string``
+                content = self.decode_content(content)
+
+                if not isinstance(content, basestring):
+                    fieldpath = '{0}.json'.format(fieldpath)
+
+                self.dump_file(fieldpath, content)
+        else:  # in case of content is ``string``
             self.dump_file(filepath, self.decode_content(value))
 
     def setup_couchapp_json(self):

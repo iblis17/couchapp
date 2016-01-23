@@ -598,3 +598,108 @@ class TestCloneMethod():
             'truth': 42
         }
         assert self.clone.flatten_doc(doc) == expect
+
+    @patch('couchapp.clone_app.clone.decode_content')
+    @patch('couchapp.clone_app.clone.setup_dir')
+    @patch('couchapp.clone_app.clone.dump_file')
+    def test_setup_prop_nonexist(self, dump_file, setup_dir, decode_content):
+        '''
+        Test case for ``clone.setup_prop`` with nonexist prop
+        '''
+        self.clone.doc = {}
+        self.clone.setup_prop('nonexist')
+        assert not decode_content.called
+        assert not setup_dir.called
+        assert not dump_file.called
+
+    @patch('couchapp.clone_app.clone.decode_content')
+    @patch('couchapp.clone_app.clone.setup_dir')
+    @patch('couchapp.clone_app.clone.dump_file')
+    def test_setup_prop_dict(self, dump_file, setup_dir, decode_content):
+        '''
+        Test case for ``clone.setup_prop`` with dict
+        '''
+        self.clone.path = '/mockapp'
+        self.clone.doc = {
+            'mock': {
+                'foo': {
+                    'bar': 42,
+                    'baz': None,
+                }
+            },
+            'fake': {
+                'fun': 'data',
+            }
+        }
+        decode_content.side_effect = lambda x: x
+
+        self.clone.setup_prop('mock')
+        assert setup_dir.call_count == 1
+        assert decode_content.called
+        assert '/mockapp/mock/foo.json' in dump_file.call_args_list[0][0]
+        assert {'bar': 42, 'baz': None} in dump_file.call_args_list[0][0]
+
+        setup_dir.reset_mock()
+        dump_file.reset_mock()
+
+        self.clone.setup_prop('fake')
+        assert setup_dir.called == 1
+        assert decode_content.called
+        assert '/mockapp/fake/fun' in dump_file.call_args_list[0][0]
+        assert 'data' in dump_file.call_args_list[0][0]
+
+    @patch('couchapp.clone_app.clone.decode_content')
+    @patch('couchapp.clone_app.clone.setup_dir')
+    @patch('couchapp.clone_app.clone.dump_file')
+    def test_setup_prop_str(self, dump_file, setup_dir, decode_content):
+        '''
+        Test case for ``clone.setup_prop`` with str value
+        '''
+        self.clone.path = '/mockapp'
+        self.clone.doc = {
+            'foo': 'bar',
+        }
+        decode_content.side_effect = lambda x: x
+        self.clone.setup_prop('foo')
+
+        assert not setup_dir.called
+        assert decode_content.called
+        assert '/mockapp/foo' in dump_file.call_args_list[0][0]
+        assert 'bar' in dump_file.call_args_list[0][0]
+
+    @patch('couchapp.clone_app.clone.decode_content')
+    @patch('couchapp.clone_app.clone.setup_dir')
+    @patch('couchapp.clone_app.clone.dump_file')
+    def test_setup_prop_non_str(self, dump_file, setup_dir, decode_content):
+        '''
+        Test case for ``clone.setup_prop`` with non-str value
+        '''
+        self.clone.path = '/mockapp'
+        self.clone.doc = {
+            'foo': 42,
+            'bar': None,
+            'baz': True,
+            'qux': [1, 2, 3],
+        }
+        decode_content.side_effect = lambda x: x
+        self.clone.setup_prop('foo')
+
+        assert not setup_dir.called
+        assert not decode_content.called
+        assert '/mockapp/foo.json' in dump_file.call_args_list[0][0]
+        assert 42 in dump_file.call_args_list[0][0]
+
+        dump_file.reset_mock()
+        self.clone.setup_prop('bar')
+        assert '/mockapp/bar.json' in dump_file.call_args_list[0][0]
+        assert None in dump_file.call_args_list[0][0]
+
+        dump_file.reset_mock()
+        self.clone.setup_prop('baz')
+        assert '/mockapp/baz.json' in dump_file.call_args_list[0][0]
+        assert True in dump_file.call_args_list[0][0]
+
+        dump_file.reset_mock()
+        self.clone.setup_prop('qux')
+        assert '/mockapp/qux.json' in dump_file.call_args_list[0][0]
+        assert [1, 2, 3] in dump_file.call_args_list[0][0]
