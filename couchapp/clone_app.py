@@ -246,7 +246,7 @@ class clone(object):
                 self.setup_couchapp_json()
             elif key in ('views',):
                 self.setup_views()
-            elif key in ('shows', 'lists', 'filter', 'updates'):
+            elif key in ('shows', 'lists', 'filters', 'updates'):
                 self.setup_func(key)
             else:
                 self.setup_prop(key)
