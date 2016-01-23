@@ -259,7 +259,8 @@ class clone(object):
         Create file for arbitrary property.
 
         Policy:
-        - If the property is a list, we will save it as json file.
+        - If the property is a list/int/float/bool/null,
+          we will save it as json file.
 
         - If the property is a dict, we will create a dir for it and
           handle its contents recursively.
@@ -272,32 +273,30 @@ class clone(object):
         if prop not in self.doc:
             return
 
-        filedir = os.path.join(self.path, prop)
+        filepath = os.path.join(self.path, prop)
 
-        if os.path.exists(filedir):
+        if os.path.exists(filepath):
             return
 
         logger.warning('clone property not in manifest: {0}'.format(prop))
 
-        if isinstance(self.doc[prop], (list, tuple,)):
-            util.write_json('{0}.json'.format(filedir), self.doc[prop])
-        elif isinstance(self.doc[prop], dict):
-            if not os.path.isdir(filedir):
-                os.makedirs(filedir)
+        value = self.doc[prop]
+        if isinstance(value, (list, tuple, int, float, bool)) or value is None:
+            self.dump_file('{0}.json'.format(filepath), value)
+        elif isinstance(value, dict):
+            if not os.path.isdir(filepath):
+                self.setup_dir(filepath)
 
             for field, value in self.doc[prop].iteritems():
-                fieldpath = os.path.join(filedir, field)
+                fieldpath = os.path.join(filepath, field)
                 if isinstance(value, basestring):
                     if value.startswith('base64-encoded;'):
                         value = base64.b64decode(content[15:])
                     util.write(fieldpath, value)
                 else:
                     util.write_json(fieldpath + '.json', value)
-        else:
-            value = self.doc[prop]
-            if not isinstance(value, basestring):
-                value = str(value)
-            util.write(filedir, value)
+        else:  # in case of ``string``
+            self.dump_file(filepath, self.decode_content(value))
 
     def setup_couchapp_json(self):
         '''
@@ -438,3 +437,27 @@ class clone(object):
             logger.debug(e)
             return False
         return True
+
+    def flatten_doc(self, doc):
+        '''
+        flatten a nested doc with filesystem map
+
+        :param doc: {
+            'foo': {
+                'bar': 'fake'
+            }
+        }
+
+        :return: {
+            'foo/bar': 'fake'
+        }
+        '''
+        ret = {}
+        for key, val in doc.iteritems():
+            if not isinstance(val, dict):
+                ret[key] = val
+                continue
+
+            for subkey, subval in self.flatten_doc(val).iteritems():
+                ret['{0}/{1}'.format(key, subkey)] = subval
+        return ret

@@ -578,3 +578,23 @@ class TestCloneMethod():
 
         assert setup_dir.called
         assert util_write.call_count == 2
+
+    def test_flatten_doc(self):
+        '''
+        Test case for ``flatten_doc``
+        '''
+        doc = {
+            'views': {
+                'mock': {
+                    'map': 'map_func',
+                    'reduce': 'reduce_func',
+                }
+            },
+            'truth': 42
+        }
+        expect = {
+            'views/mock/map': 'map_func',
+            'views/mock/reduce': 'reduce_func',
+            'truth': 42
+        }
+        assert self.clone.flatten_doc(doc) == expect
