@@ -506,3 +506,40 @@ class TestCloneMethod():
 
         assert '/mock/couchapp.json' in write_json.call_args_list[0][0]
         assert {'name': 'foo', 'truth': 42} in write_json.call_args_list[0][0]
+
+    @patch('couchapp.clone_app.clone.setup_dir')
+    @patch('couchapp.clone_app.util.write')
+    def test_setup_views_empty(self, util_write, setup_dir):
+        '''
+        Test case for ``setup_views`` with empty ``views`` prop
+        '''
+        self.clone.doc = {
+            'views': {}
+        }
+        self.clone.path = '/mock'
+
+        self.clone.setup_views()
+
+        assert not util_write.called
+        assert setup_dir.called
+
+    @patch('couchapp.clone_app.clone.setup_dir')
+    @patch('couchapp.clone_app.util.write')
+    def test_setup_views(self, util_write, setup_dir):
+        '''
+        Test case for ``setup_views`` with ``mockview`` written
+        '''
+        self.clone.doc = {
+            'views': {
+                'mockview': {
+                    'map': 'function(){}',
+                    'redurce': 'function(){}',
+                }
+            }
+        }
+        self.clone.path = '/mock'
+
+        self.clone.setup_views()
+
+        assert util_write.call_count == 2
+        assert setup_dir.called

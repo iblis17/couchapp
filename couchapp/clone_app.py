@@ -331,25 +331,26 @@ class clone(object):
         '''
         Create ``views/``
 
-        ``views`` dir will have following structure:
-        ```
-        views/
-            view_name/
-                map.js
-                reduce.js (optional)
-            view_name2/
-                ...
-        ```
+        ``views`` dir will have following structure::
+
+            views/
+                view_name/
+                    map.js
+                    reduce.js (optional)
+                view_name2/
+                    ...
+
         '''
         vs_dir = os.path.join(self.path, 'views')
 
         if not os.path.isdir(vs_dir):
-            os.makedirs(vs_dir)
+            self.setup_dir(vs_dir)
 
         for vsname, vs_item in self.doc['views'].iteritems():
             vs_item_dir = os.path.join(vs_dir, vsname)
             if not os.path.isdir(vs_item_dir):
-                os.makedirs(vs_item_dir)
+                self.setup_dir(vs_item_dir)
+
             for func_name, func in vs_item.iteritems():
                 filename = os.path.join(vs_item_dir,
                                         '{0}.js'.format(func_name))
