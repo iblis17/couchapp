@@ -794,3 +794,17 @@ class TestCloneMethod():
         assert not setup_views.called
         assert not setup_func.called
         assert setup_prop.call_count == 3
+
+    @patch('couchapp.clone_app.util.write')
+    def test_setup_id(self, write):
+        '''
+        Test case for ``clone.setup_id``
+        '''
+        self.clone.path = '/mock'
+        self.clone.doc = {
+            '_id': '_design/mock',
+        }
+
+        self.clone.setup_id()
+        assert '/mock/_id' in write.call_args_list[0][0]
+        assert '_design/mock' in write.call_args_list[0][0]
