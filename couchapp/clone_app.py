@@ -59,6 +59,9 @@ class clone(object):
         # manifest isn't in app
         self.setup_missing()
 
+        # create couchapp.json
+        self.setup_couchapp_json()
+
         # save id
         self.setup_id()
 
@@ -123,8 +126,8 @@ class clone(object):
             if filename.endswith('/'):  # create dir
                 self.setup_dir(filepath)
                 continue
-            elif filename == 'couchapp.json':  # we will handle it later
-                continue
+            elif filename == 'couchapp.json':
+                continue  # we will setup it later in ``self.__init__``
 
             # create file
             item_pair = self.extract_property(filename)
@@ -243,7 +246,7 @@ class clone(object):
             if key.startswith('_'):
                 continue
             elif key in ('couchapp',):
-                self.setup_couchapp_json()
+                continue  # we will setup it later in ``self.__init__``
             elif key in ('views',):
                 self.setup_views()
             elif key in ('shows', 'lists', 'filters', 'updates'):
@@ -306,6 +309,10 @@ class clone(object):
             - ``objects``
             - ``length``
         '''
+        if 'couchapp' not in self.doc:
+            logger.warning('missing `couchapp` property in document')
+            return
+
         app_meta = copy.deepcopy(self.doc['couchapp'])
 
         if 'signatures' in app_meta:
@@ -317,9 +324,8 @@ class clone(object):
         if 'length' in app_meta:
             del app_meta['length']
 
-        if app_meta:
-            couchapp_file = os.path.join(self.path, 'couchapp.json')
-            util.write_json(couchapp_file, app_meta)
+        couchapp_file = os.path.join(self.path, 'couchapp.json')
+        util.write_json(couchapp_file, app_meta)
 
     def setup_views(self):
         '''

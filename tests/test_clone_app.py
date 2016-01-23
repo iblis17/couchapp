@@ -455,3 +455,54 @@ class TestCloneMethod():
         assert extract_property.call_count == 2
         assert dump_file.called
         assert decode_content.called
+
+    @patch('couchapp.clone_app.util.write_json')
+    def test_setup_couchapp_json_miss(self, write_json):
+        '''
+        Test case for setup_couchapp_json with missing ``self.doc['couchapp']``
+        '''
+        self.clone.doc = {}
+        self.clone.setup_couchapp_json()
+        assert not write_json.called
+
+    @patch('couchapp.clone_app.util.write_json')
+    def test_setup_couchapp_json_empty(self, write_json):
+        '''
+        Test case for setup_couchapp_json with empty json writted finally
+        '''
+        self.clone.doc = {
+            'couchapp': {
+                'signatures': {},
+                'objects': {},
+                'manifest': [],
+                'length': 42
+            }
+        }
+        self.clone.path = '/mock'
+
+        self.clone.setup_couchapp_json()
+
+        assert '/mock/couchapp.json' in write_json.call_args_list[0][0]
+        assert {} in write_json.call_args_list[0][0]
+
+    @patch('couchapp.clone_app.util.write_json')
+    def test_setup_couchapp_json(self, write_json):
+        '''
+        Test case for setup_couchapp_json
+        '''
+        self.clone.doc = {
+            'couchapp': {
+                'name': 'foo',
+                'signatures': {},
+                'objects': {},
+                'manifest': [],
+                'length': 42,
+                'truth': 42,
+            },
+        }
+        self.clone.path = '/mock'
+
+        self.clone.setup_couchapp_json()
+
+        assert '/mock/couchapp.json' in write_json.call_args_list[0][0]
+        assert {'name': 'foo', 'truth': 42} in write_json.call_args_list[0][0]
