@@ -418,6 +418,25 @@ class clone(object):
                         f.write(chunk)
                 logger.debug('clone attachment: {0}'.format(filename))
 
+    def vendor_attach_dir(self, path):
+        '''
+        Map the vendor attachments to filesystem path
+
+        Assume that we have ``vendor/couchapp/index.html``
+        in ``_attachments`` section. It should be stored in
+        ``/path/to/app/vendor/couchapp/_attachments/index.html``
+
+        :return: the path string,
+                 if the ``path`` not starts with ``vendor``,
+                 return the original path.
+        '''
+        if not path.startswith('vendor'):
+            return path
+
+        path = util.split_path(path)
+        path.insert(2, '_attachments')
+        return os.path.join(self.path, *path)
+
     def setup_dir(self, path):
         '''
         Create dir recursively.

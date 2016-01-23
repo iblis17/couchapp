@@ -808,3 +808,24 @@ class TestCloneMethod():
         self.clone.setup_id()
         assert '/mock/_id' in write.call_args_list[0][0]
         assert '_design/mock' in write.call_args_list[0][0]
+
+    def test_vendor_attach_dir(self):
+        '''
+        Test case for ``clone.vendor_attach_dir``
+        '''
+        self.clone.path = '/mock'
+        orig_path = 'vendor/couchapp/app.js'
+        expect = '/mock/vendor/couchapp/_attachments/app.js'
+
+        ret = self.clone.vendor_attach_dir(orig_path)
+        assert ret == expect, '{0} != {1}'.format(ret, expect)
+
+    def test_vendor_attach_dir_invalid(self):
+        '''
+        Test case for ``clone.vendor_attach_dir`` with invalid path
+        '''
+        self.clone.path = '/mock'
+        orig_path = 'nonvendor/couchapp/app.js'
+
+        ret = self.clone.vendor_attach_dir(orig_path)
+        assert ret == orig_path, '{0} != {1}'.format(ret, orig_path)
