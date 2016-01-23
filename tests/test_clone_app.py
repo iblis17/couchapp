@@ -543,3 +543,38 @@ class TestCloneMethod():
 
         assert util_write.call_count == 2
         assert setup_dir.called
+
+    @patch('couchapp.clone_app.clone.setup_dir')
+    @patch('couchapp.clone_app.util.write')
+    def test_setup_func_empty(self, util_write, setup_dir):
+        '''
+        Test case for ``setup_func`` with empty func prop
+        '''
+        self.clone.doc = {
+            'shows': {}
+        }
+        self.clone.path = '/mock'
+
+        self.clone.setup_func('shows')
+
+        assert setup_dir.called
+        assert not util_write.called
+
+    @patch('couchapp.clone_app.clone.setup_dir')
+    @patch('couchapp.clone_app.util.write')
+    def test_setup_func_shows(self, util_write, setup_dir):
+        '''
+        Test case for ``setup_func`` have ``shows`` written
+        '''
+        self.clone.doc = {
+            'shows': {
+                'mock': 'function(){}',
+                'fake': 'function(){}'
+            }
+        }
+        self.clone.path = '/mock'
+
+        self.clone.setup_func('shows')
+
+        assert setup_dir.called
+        assert util_write.call_count == 2

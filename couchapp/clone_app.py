@@ -366,17 +366,17 @@ class clone(object):
             - ``filters``
             - ``updates``
         '''
-        showpath = os.path.join(self.path, func)
+        func_dir = os.path.join(self.path, func)
 
-        if not os.path.isdir(showpath):
-            os.makedirs(showpath)
+        if not os.path.isdir(func_dir):
+            self.setup_dir(func_dir)
 
         for func_name, func in self.doc[func].iteritems():
-            filename = os.path.join(showpath, '{0}.js'.format(func_name))
+            filename = os.path.join(func_dir, '{0}.js'.format(func_name))
             util.write(filename, func)
             logger.warning(
-                'clone function "{0}" not in manifest: {1}'.format(func,
-                                                                   filename))
+                'clone function "{0}" not in manifest: {1}'.format(
+                func, filename))
 
     def setup_id(self):
         '''
