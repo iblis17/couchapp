@@ -703,3 +703,94 @@ class TestCloneMethod():
         self.clone.setup_prop('qux')
         assert '/mockapp/qux.json' in dump_file.call_args_list[0][0]
         assert [1, 2, 3] in dump_file.call_args_list[0][0]
+
+    @patch('couchapp.clone_app.clone.setup_prop')
+    @patch('couchapp.clone_app.clone.setup_func')
+    @patch('couchapp.clone_app.clone.setup_views')
+    def test_setup_missing_underlinekey(self, setup_views, setup_func, setup_prop):
+        '''
+        Test case for ``clone.setup_missing`` handle ``_key``
+        '''
+        self.clone.doc = {
+            '_id': 'foo',
+            '_rev': 'bar',
+        }
+        self.clone.setup_missing()
+
+        assert not setup_views.called
+        assert not setup_func.called
+        assert not setup_prop.called
+
+    @patch('couchapp.clone_app.clone.setup_prop')
+    @patch('couchapp.clone_app.clone.setup_func')
+    @patch('couchapp.clone_app.clone.setup_views')
+    def test_setup_missing_couchapp_json(self, setup_views, setup_func, setup_prop):
+        '''
+        Test case for ``clone.setup_missing`` encounter key ``couchapp``
+        '''
+        self.clone.doc = {
+            'couchapp': {}
+        }
+        self.clone.setup_missing()
+
+        assert not setup_views.called
+        assert not setup_func.called
+        assert not setup_prop.called
+
+    @patch('couchapp.clone_app.clone.setup_prop')
+    @patch('couchapp.clone_app.clone.setup_func')
+    @patch('couchapp.clone_app.clone.setup_views')
+    def test_setup_missing_views(self, setup_views, setup_func, setup_prop):
+        '''
+        Test case for ``clone.setup_missing`` handle views
+        '''
+        self.clone.doc = {
+            'views': {
+                'mock': {
+                    'map': 'func',
+                    'reduce': 'func',
+                }
+            }
+        }
+        self.clone.setup_missing()
+
+        assert setup_views.called
+        assert not setup_func.called
+        assert not setup_prop.called
+
+    @patch('couchapp.clone_app.clone.setup_prop')
+    @patch('couchapp.clone_app.clone.setup_func')
+    @patch('couchapp.clone_app.clone.setup_views')
+    def test_setup_missing_func(self, setup_views, setup_func, setup_prop):
+        '''
+        Test case for ``clone.setup_missing`` handle func like ``shows``
+        '''
+        self.clone.doc = {
+            'shows': {},
+            'updates': {},
+            'filters': {},
+            'lists': {},
+        }
+        self.clone.setup_missing()
+
+        assert not setup_views.called
+        assert setup_func.call_count == 4
+        assert not setup_prop.called
+
+    @patch('couchapp.clone_app.clone.setup_prop')
+    @patch('couchapp.clone_app.clone.setup_func')
+    @patch('couchapp.clone_app.clone.setup_views')
+    def test_setup_missing_prop(self, setup_views, setup_func, setup_prop):
+        '''
+        Test case for ``clone.setup_missing`` handle prop
+        '''
+        self.clone.doc = {
+            'mock': 'fake',
+            'foo': 'bar',
+            'baz': 'qux',
+        }
+        self.clone.setup_missing()
+
+        assert not setup_views.called
+        assert not setup_func.called
+        assert setup_prop.call_count == 3

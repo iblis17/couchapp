@@ -242,7 +242,7 @@ class clone(object):
         '''
         second pass for missing key or in case manifest isn't in app.
         '''
-        for key in self.doc.iterkeys():
+        for key in self.doc:
             if key.startswith('_'):
                 continue
             elif key in ('couchapp',):
