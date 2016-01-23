@@ -242,9 +242,9 @@ class clone(object):
         for key in self.doc.iterkeys():
             if key.startswith('_'):
                 continue
-            elif key in ('couchapp'):
+            elif key in ('couchapp',):
                 self.setup_couchapp_json()
-            elif key in ('views'):
+            elif key in ('views',):
                 self.setup_views()
             elif key in ('shows', 'lists', 'filter', 'updates'):
                 self.setup_func(key)
