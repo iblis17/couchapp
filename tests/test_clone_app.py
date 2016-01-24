@@ -966,3 +966,14 @@ class TestCloneMethod():
 
         assert db_call in db.mock_calls
         assert connect_call in db().open_doc.mock_calls
+
+    @patch('couchapp.clone_app.util.write_json')
+    def test_setup_couchapprc(self, write_json):
+        '''
+        Test case for ``clone.setup_couchapprc``
+        '''
+        self.clone.path = '/mock'
+        expect_call = call('/mock/.couchapprc', {})
+
+        self.clone.setup_couchapprc()
+        assert expect_call in write_json.mock_calls

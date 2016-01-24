@@ -63,8 +63,8 @@ class clone(object):
         # save id
         self.setup_id()
 
-        # setup empty .couchapprc
-        util.write_json(os.path.join(self.path, '.couchapprc'), {})
+        # setup .couchapprc
+        self.setup_couchapprc()
 
         # process attachments
         self.setup_attachments()
@@ -401,6 +401,12 @@ class clone(object):
         '''
         idfile = os.path.join(self.path, '_id')
         util.write(idfile, self.doc['_id'])
+
+    def setup_couchapprc(self):
+        '''
+        Setup empty .couchapprc
+        '''
+        util.write_json(os.path.join(self.path, '.couchapprc'), {})
 
     def setup_attachments(self):
         '''
