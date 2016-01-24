@@ -3,7 +3,7 @@
 from couchapp.clone_app import clone
 from couchapp.errors import AppError, MissingContent
 
-from mock import patch
+from mock import MagicMock, call, patch
 from nose.tools import  raises
 
 
@@ -829,3 +829,25 @@ class TestCloneMethod():
 
         ret = self.clone.vendor_attach_dir(orig_path)
         assert ret == orig_path, '{0} != {1}'.format(ret, orig_path)
+
+    @patch('couchapp.clone_app.open', side_effect=AssertionError)
+    def test_dump_attachment_empty(self, mock_open):
+        '''
+        Test case for ``clone.dump_attachment`` with empty args
+        '''
+        self.clone.dump_attachment('', '')
+        self.clone.dump_attachment(None, None)
+
+    @patch('couchapp.clone_app.open')
+    def test_dump_attachment(self, mock_open):
+        '''
+        Test case for ``clone.dump_attachment``
+        '''
+        self.clone.docid = 'fakeid'
+        self.clone.db = MagicMock(name='db')
+        self.clone.db.fetch_attachment().body_stream.return_value = [None]
+        self.clone.dump_attachment('js/app.js', '/mock/_attachments/js/app.js')
+        expect_call = call.fetch_attachment('fakeid', 'js/app.js')
+
+        assert mock_open.called
+        assert expect_call in self.clone.db.mock_calls

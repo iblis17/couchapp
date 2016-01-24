@@ -437,6 +437,21 @@ class clone(object):
         path.insert(2, '_attachments')
         return os.path.join(self.path, *path)
 
+    def dump_attachment(self, url, path):
+        '''
+        dump the attachment to filesystem.
+
+        :param url: the relative url in document
+        :param path: the filesystem path
+        '''
+        if not url or not path:
+            return
+
+        resp = self.db.fetch_attachment(self.docid, url)
+        with open(path, 'wb') as f:
+            for chunk in resp.body_stream():
+                f.write(chunk)
+
     def setup_dir(self, path):
         '''
         Create dir recursively.
