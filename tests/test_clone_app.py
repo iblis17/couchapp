@@ -934,3 +934,35 @@ class TestCloneMethod():
 
         assert setup_dir.called
         assert not dump_attachment.called
+
+    @patch('couchapp.clone_app.client.Database')
+    def test_init_db_no_rev(self, db):
+        '''
+        Test case for ``clone.init_db`` without ``self.rev``
+        '''
+        self.clone.rev = None
+        self.clone.docid = 'mockapp'
+        self.clone.dburl = 'http://localhost:5984/test_db/'
+        db_call = call('http://localhost:5984/test_db', create=False)
+        connect_call = call('_design/mockapp')
+
+        self.clone.init_db()
+
+        assert db_call in db.mock_calls
+        assert connect_call in db().open_doc.mock_calls
+
+    @patch('couchapp.clone_app.client.Database')
+    def test_init_db_rev(self, db):
+        '''
+        Test case for ``clone.init_db`` with ``self.rev``
+        '''
+        self.clone.rev = 'mockrev'
+        self.clone.docid = 'mockapp'
+        self.clone.dburl = 'http://localhost:5984/test_db/'
+        db_call = call('http://localhost:5984/test_db', create=False)
+        connect_call = call('_design/mockapp', rev='mockrev')
+
+        self.clone.init_db()
+
+        assert db_call in db.mock_calls
+        assert connect_call in db().open_doc.mock_calls

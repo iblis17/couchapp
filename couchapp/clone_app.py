@@ -41,13 +41,11 @@ class clone(object):
         # init self.path
         self.init_path()
 
-        # init self.db
-        self.db = client.Database(self.dburl[:-1], create=False)
-        if not self.rev:
-            self.doc = self.db.open_doc('_design/{0}'.format(self.docid))
-        else:
-            self.doc = self.db.open_doc('_design/{0}'.format(self.docid), rev=self.rev)
-        self.docid = self.doc['_id']
+        # init self.db related vars here
+        # affected:
+        #    - self.docid
+        #    - self.doc
+        self.init_db()
 
         # init metadata
         self.init_metadata()
@@ -83,9 +81,29 @@ class clone(object):
         return None
 
     def init_path(self):
+        '''
+        data dependency:
+        - self.dest
+        '''
         self.path = os.path.normpath(os.path.join(os.getcwd(),
                                                   self.dest or ''))
         self.setup_dir(self.path)
+
+    def init_db(self):
+        '''
+        init self.db related vars here
+
+        affected:
+        - self.docid
+        - self.doc
+        '''
+        self.db = client.Database(self.dburl[:-1], create=False)
+        if not self.rev:
+            self.doc = self.db.open_doc('_design/{0}'.format(self.docid))
+        else:
+            self.doc = self.db.open_doc('_design/{0}'.format(self.docid),
+                                        rev=self.rev)
+        self.docid = self.doc['_id']
 
     def init_metadata(self):
         '''
