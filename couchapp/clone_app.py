@@ -386,7 +386,7 @@ class clone(object):
 
     def setup_attachments(self):
         '''
-        Create ``_attachments`` dir
+        Create ``_attachments``
         '''
         if '_attachments' not in self.doc:
             return
@@ -394,44 +394,36 @@ class clone(object):
         attachdir = os.path.join(self.path, '_attachments')
 
         if not os.path.isdir(attachdir):
-            os.makedirs(attachdir)
+            self.setup_dir(attachdir)
 
-        for filename in self.doc['_attachments'].iterkeys():
-            if filename.startswith('vendor'):
-                attach_parts = util.split_path(filename)
-                vendor_attachdir = os.path.join(self.path, attach_parts.pop(0),
-                                                attach_parts.pop(0),
-                                                '_attachments')
-                filepath = os.path.join(vendor_attachdir, *attach_parts)
-            else:
-                filepath = os.path.join(attachdir, filename)
-
-            filepath = os.path.normpath(filepath)
+        for filename in self.doc['_attachments']:
+            filepath = os.path.normpath(self.locate_attach_dir(filename))
             currentdir = os.path.dirname(filepath)
+
             if not os.path.isdir(currentdir):
-                os.makedirs(currentdir)
+                self.setup_dir(currentdir)
 
-            if self.signatures.get(filename) != util.sign(filepath):
-                resp = self.db.fetch_attachment(self.docid, filename)
-                with open(filepath, 'wb') as f:
-                    for chunk in resp.body_stream():
-                        f.write(chunk)
-                logger.debug('clone attachment: {0}'.format(filename))
+            if self.signatures.get(filename) == util.sign(filepath):
+                continue  # we already have the same file on fs
 
-    def vendor_attach_dir(self, path):
+            self.dump_attachment(filename, filepath)
+
+            logger.debug('clone attachment: "{0}"'.format(filename))
+
+    def locate_attach_dir(self, path):
         '''
-        Map the vendor attachments to filesystem path
+        Map the attachments dir to filesystem path
 
-        Assume that we have ``vendor/couchapp/index.html``
-        in ``_attachments`` section. It should be stored in
+        Note that if we have ``vendor/couchapp/index.html``
+        in ``_attachments`` section, it should be stored in
         ``/path/to/app/vendor/couchapp/_attachments/index.html``
 
         :return: the path string,
                  if the ``path`` not starts with ``vendor``,
-                 return the original path.
+                 return the normal attachment dir
         '''
         if not path.startswith('vendor'):
-            return path
+            return os.path.join(self.path, '_attachments', path)
 
         path = util.split_path(path)
         path.insert(2, '_attachments')

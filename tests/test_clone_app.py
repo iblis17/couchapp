@@ -809,26 +809,27 @@ class TestCloneMethod():
         assert '/mock/_id' in write.call_args_list[0][0]
         assert '_design/mock' in write.call_args_list[0][0]
 
-    def test_vendor_attach_dir(self):
+    def test_locate_attach_dir_vendor(self):
         '''
-        Test case for ``clone.vendor_attach_dir``
+        Test case for ``clone.locate_attach_dir`` with vendor dir
         '''
         self.clone.path = '/mock'
         orig_path = 'vendor/couchapp/app.js'
         expect = '/mock/vendor/couchapp/_attachments/app.js'
 
-        ret = self.clone.vendor_attach_dir(orig_path)
+        ret = self.clone.locate_attach_dir(orig_path)
         assert ret == expect, '{0} != {1}'.format(ret, expect)
 
-    def test_vendor_attach_dir_invalid(self):
+    def test_locate_attach_dir(self):
         '''
-        Test case for ``clone.vendor_attach_dir`` with invalid path
+        Test case for ``clone.locate_attach_dir``
         '''
         self.clone.path = '/mock'
         orig_path = 'nonvendor/couchapp/app.js'
+        expect = '/mock/_attachments/nonvendor/couchapp/app.js'
 
-        ret = self.clone.vendor_attach_dir(orig_path)
-        assert ret == orig_path, '{0} != {1}'.format(ret, orig_path)
+        ret = self.clone.locate_attach_dir(orig_path)
+        assert ret == expect, '{0} != {1}'.format(ret, expect)
 
     @patch('couchapp.clone_app.open', side_effect=AssertionError)
     def test_dump_attachment_empty(self, mock_open):
@@ -851,3 +852,85 @@ class TestCloneMethod():
 
         assert mock_open.called
         assert expect_call in self.clone.db.mock_calls
+
+    @patch('couchapp.clone_app.clone.dump_attachment')
+    @patch('couchapp.clone_app.clone.setup_dir')
+    def test_setup_attachments_empty(self, setup_dir, dump_attachment):
+        '''
+        Test case for ``clone.setup_attachments`` with empty args
+        '''
+        self.clone.doc = {}
+
+        self.clone.setup_attachments()
+
+        assert not setup_dir.called
+        assert not dump_attachment.called
+
+    @patch('couchapp.clone_app.clone.dump_attachment')
+    @patch('couchapp.clone_app.clone.setup_dir')
+    def test_setup_attachments(self, setup_dir, dump_attachment):
+        '''
+        Test case for ``clone.setup_attachments``
+        '''
+        self.clone.path = '/mock'
+        self.clone.doc = {
+            '_attachments': {
+                'js/mock.js': {
+                    'content_type': 'application/javascript',
+                }
+            }
+        }
+        self.clone.signatures = {}
+        dump_call = call('js/mock.js', '/mock/_attachments/js/mock.js')
+
+        self.clone.setup_attachments()
+
+        assert setup_dir.called
+        assert dump_call in dump_attachment.mock_calls
+
+    @patch('couchapp.clone_app.clone.dump_attachment')
+    @patch('couchapp.clone_app.clone.setup_dir')
+    def test_setup_attachments_vendor(self, setup_dir, dump_attachment):
+        '''
+        Test case for ``clone.setup_attachments`` with vendor attachements
+        '''
+        self.clone.path = '/mock'
+        self.clone.doc = {
+            '_attachments': {
+                'vendor/couchapp/magic.js': {
+                    'content_type': 'application/javascript',
+                }
+            }
+        }
+        self.clone.signatures = {}
+        dump_call = call('vendor/couchapp/magic.js',
+                         '/mock/vendor/couchapp/_attachments/magic.js')
+
+        self.clone.setup_attachments()
+
+        assert setup_dir.called
+        assert dump_call in dump_attachment.mock_calls
+
+    @patch('couchapp.clone_app.util.sign', return_value='mock_sign')
+    @patch('couchapp.clone_app.clone.dump_attachment')
+    @patch('couchapp.clone_app.clone.setup_dir')
+    def test_setup_attachments_ignore(self, setup_dir, dump_attachment, sign):
+        '''
+        Test case for ``clone.setup_attachments`` ignore existed file on fs
+        '''
+        self.clone.path = '/mock'
+        self.clone.doc = {
+            '_attachments': {
+                'vendor/couchapp/magic.js': {
+                    'content_type': 'application/javascript',
+                }
+            }
+        }
+        self.clone.signatures = {
+            'vendor/couchapp/magic.js': 'mock_sign'
+        }
+
+        self.clone.setup_attachments()
+
+        assert setup_dir.called
+        assert not dump_attachment.called
