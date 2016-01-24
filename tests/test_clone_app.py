@@ -977,3 +977,23 @@ class TestCloneMethod():
 
         self.clone.setup_couchapprc()
         assert expect_call in write_json.mock_calls
+
+    @patch('couchapp.clone_app.clone.setup_attachments')
+    @patch('couchapp.clone_app.clone.setup_couchapprc')
+    @patch('couchapp.clone_app.clone.setup_id')
+    @patch('couchapp.clone_app.clone.setup_couchapp_json')
+    @patch('couchapp.clone_app.clone.setup_missing')
+    @patch('couchapp.clone_app.clone.setup_manifest')
+    @patch('couchapp.clone_app.clone.init_metadata')
+    @patch('couchapp.clone_app.clone.init_db')
+    @patch('couchapp.clone_app.clone.init_path')
+    def test_init(self, *args):
+        '''
+        Test case for ``clone__init__``
+        '''
+        src = 'http://localhost:5984/testdb/_design/mockapp'
+        self.clone.__init__(src)
+
+        for mock in args:
+            assert mock.called, mock
+        assert self.clone.dest == 'mockapp', self.clone.dest
