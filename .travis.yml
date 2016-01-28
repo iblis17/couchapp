@@ -6,7 +6,9 @@ services:
   - couchdb
 sudo: false
 before_script:
-  - pip install coveralls unittest2 nose-testconfig mock
+    - pip install -U pip
+    - pip --version
+    - pip install -U coveralls unittest2 nose nose-testconfig mock
 script:
   - python setup.py install
   - python setup.py nosetests
