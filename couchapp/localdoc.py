@@ -14,6 +14,7 @@ import re
 import urlparse
 import webbrowser
 
+
 try:
     import desktopcouch
     try:
@@ -27,6 +28,7 @@ except ImportError:
 from couchapp.errors import ResourceNotFound, AppError
 from couchapp.macros import package_shows, package_views
 from couchapp import util
+
 
 if os.name == 'nt':
     def _replace_backslash(name):
@@ -50,6 +52,14 @@ logger = logging.getLogger(__name__)
 
 
 class LocalDoc(object):
+    '''
+    The local document interface
+
+    :param str path: the dir path of doc
+    :param bool create: Default is ``False``
+    :param bool docid: Default is ``None``
+    :param bool is_ddoc: Default is ``True``
+    '''
 
     def __init__(self, path, create=False, docid=None, is_ddoc=True):
         self.docdir = path
@@ -81,10 +91,9 @@ class LocalDoc(object):
             docid = util.read(idfile).split("\n")[0].strip()
             if docid:
                 return docid
-        if self.is_ddoc:
-            return "_design/%s" % os.path.split(self.docdir)[1]
-        else:
-            return os.path.split(self.docdir)[1]
+
+        dirname = os.path.split(self.docdir)[1]
+        return '_design/{0}'.format(dirname) if self.is_ddoc else dirname
 
     def __repr__(self):
         return "<%s (%s/%s)>" % (self.__class__.__name__, self.docdir,
